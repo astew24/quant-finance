@@ -27,7 +27,7 @@ class CryptoDataCollector:
         symbols: List of trading pairs to collect data for
     """
     
-    def __init__(self, symbols: List[str] = None):
+    def __init__(self, symbols: Optional[List[str]] = None) -> None:
         """
         Initialize the data collector.
         
@@ -41,7 +41,7 @@ class CryptoDataCollector:
             }
         })
         
-        self.symbols = symbols or ['BTC/USDT', 'ETH/USDT']
+        self.symbols: List[str] = symbols or ['BTC/USDT', 'ETH/USDT']
         logger.info(f"Initialized CryptoDataCollector for symbols: {self.symbols}")
     
     def fetch_ohlcv(self, symbol: str, timeframe: str = '1d', 
@@ -60,17 +60,17 @@ class CryptoDataCollector:
         """
         try:
             # Convert datetime to timestamp if provided
-            since_timestamp = None
+            since_timestamp: Optional[int] = None
             if since:
                 since_timestamp = int(since.timestamp() * 1000)
             
             # Fetch OHLCV data
-            ohlcv = self.exchange.fetch_ohlcv(
+            ohlcv: List[List[float]] = self.exchange.fetch_ohlcv(
                 symbol, timeframe, since_timestamp, limit
             )
             
             # Convert to DataFrame
-            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+            df: pd.DataFrame = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
             df.set_index('timestamp', inplace=True)
             
@@ -91,12 +91,12 @@ class CryptoDataCollector:
         Returns:
             Dictionary mapping symbols to their historical data
         """
-        since = datetime.now() - timedelta(days=days_back)
-        data = {}
+        since: datetime = datetime.now() - timedelta(days=days_back)
+        data: Dict[str, pd.DataFrame] = {}
         
         for symbol in self.symbols:
             logger.info(f"Fetching historical data for {symbol}")
-            df = self.fetch_ohlcv(symbol, '1d', since)
+            df: pd.DataFrame = self.fetch_ohlcv(symbol, '1d', since)
             if not df.empty:
                 data[symbol] = df
                 time.sleep(0.1)  # Rate limiting
@@ -138,15 +138,15 @@ class CryptoDataCollector:
         Returns:
             Dictionary with processed market data for each symbol
         """
-        raw_data = self.fetch_historical_data(days_back)
-        market_data = {}
+        raw_data: Dict[str, pd.DataFrame] = self.fetch_historical_data(days_back)
+        market_data: Dict[str, Dict[str, pd.Series]] = {}
         
         for symbol, df in raw_data.items():
             if df.empty:
                 continue
                 
-            returns = self.calculate_returns(df)
-            volatility = self.calculate_volatility(returns)
+            returns: pd.Series = self.calculate_returns(df)
+            volatility: pd.Series = self.calculate_volatility(returns)
             
             market_data[symbol] = {
                 'prices': df['close'],
@@ -160,7 +160,7 @@ class CryptoDataCollector:
         return market_data
 
 
-def save_data_to_csv(data: Dict[str, pd.DataFrame], output_dir: str = 'data'):
+def save_data_to_csv(data: Dict[str, pd.DataFrame], output_dir: str = 'data') -> None:
     """
     Save collected data to CSV files.
     
@@ -172,8 +172,8 @@ def save_data_to_csv(data: Dict[str, pd.DataFrame], output_dir: str = 'data'):
     os.makedirs(output_dir, exist_ok=True)
     
     for symbol, df in data.items():
-        filename = f"{symbol.replace('/', '_')}_data.csv"
-        filepath = os.path.join(output_dir, filename)
+        filename: str = f"{symbol.replace('/', '_')}_data.csv"
+        filepath: str = os.path.join(output_dir, filename)
         df.to_csv(filepath)
         logger.info(f"Saved {symbol} data to {filepath}")
 
