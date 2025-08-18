@@ -19,6 +19,11 @@ class FactorSet:
 
 
 def _cross_sectional_zscore(frame: pd.DataFrame) -> pd.DataFrame:
+    """Demean and scale each row across the cross-section.
+
+    Using the cross-sectional mean/std (axis=1) rather than time-series stats
+    keeps the z-scores comparable across dates even when the universe changes.
+    """
     mean = frame.mean(axis=1)
     std = frame.std(axis=1).replace(0.0, np.nan)
     return frame.sub(mean, axis=0).div(std, axis=0)
