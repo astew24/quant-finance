@@ -99,3 +99,25 @@ See individual `requirements.txt` files in each project directory for specific d
 ## 📝 License
 
 MIT License - feel free to use and modify for your own research. 
+
+---
+
+## 🧪 Testing
+
+To run the unit tests for each project, use:
+
+```bash
+cd crypto_volatility
+python -m unittest discover tests
+```
+
+or
+
+```bash
+cd factor_risk_model
+python -m unittest discover tests
+``` 
+
+---
+
+Last updated: 2025-09-23
