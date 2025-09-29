@@ -97,6 +97,12 @@ quant-finance/
 
 See individual `requirements.txt` files in each project directory for specific dependencies.
 
+**Tip:** Use a virtual environment to avoid dependency conflicts:
+```bash
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
 ## 📝 License
 
 MIT License - feel free to use and modify for your own research. 
