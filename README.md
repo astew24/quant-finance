@@ -46,6 +46,7 @@ A multi-factor risk model based on Fama-French + momentum signals with risk deco
 ## 🚀 Quick Start
 
 ### Prerequisites
+- Python 3.10 or 3.11 (TensorFlow compatibility)
 ```bash
 pip install -r requirements.txt
 ```
