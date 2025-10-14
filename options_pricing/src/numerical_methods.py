@@ -61,6 +61,7 @@ def implied_volatility(
             break
         sigma = max(sigma - error / vega, 1e-6)
 
+    # Newton failed (near-zero vega or divergence) — fall back to bisection
     low, high = 1e-6, 5.0
     for _ in range(max_iterations):
         mid = 0.5 * (low + high)
