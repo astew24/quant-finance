@@ -2,6 +2,15 @@
 End-to-end crypto volatility forecasting pipeline.
 
 Fetch data -> compute returns/vol -> fit GARCH -> forecast -> evaluate -> save.
+
+Quick summary of what runs:
+  1. download daily OHLCV from yfinance for each symbol
+  2. compute log returns and realized vol (rolling std, annualized)
+  3. fit GARCH(1,1) to each return series
+  4. generate out-of-sample forecasts via rolling window
+  5. evaluate against realized vol using RMSE and QLIKE loss
+  6. run a vol-targeting overlay strategy and compute performance stats
+  7. save all outputs under output_dir
 """
 
 import logging
