@@ -22,7 +22,7 @@ from sklearn.preprocessing import StandardScaler
 LOOKBACK_1M = 21
 LOOKBACK_3M = 63
 LOOKBACK_6M = 126
-LOOKBACK_12M = 252
+LOOKBACK_12M = 252  # standard 12-1 momentum skips the most recent month (reversal effect)
 
 FEATURE_COLUMNS = [
     "momentum_1m",
