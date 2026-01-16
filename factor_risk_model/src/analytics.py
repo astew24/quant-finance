@@ -19,6 +19,7 @@ def _to_series(values: Iterable[float]) -> pd.Series:
 
 
 def cumulative_returns(returns: Iterable[float]) -> pd.Series:
+    """Compounded cumulative return series starting at 0."""
     series = _to_series(returns)
     return (1.0 + series).cumprod() - 1.0
 
