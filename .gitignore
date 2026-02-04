@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+
+# Environments
+venv/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data artifacts
+**/data/
+**/models/
+**/plots/
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# OS
+.DS_Store
+
+# Local duplicate repo
+quant-finance/

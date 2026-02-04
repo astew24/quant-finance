@@ -42,6 +42,7 @@ class GARCHModel:
         self.mean = mean
         self.vol = vol
         self.model = None
+        self.fitted_model = None
         self.params = None
         self.forecasts = None
         
@@ -61,11 +62,11 @@ class GARCHModel:
             
             # Create and fit GARCH model
             self.model = arch_model(
-                returns_clean, 
-                vol=vol, 
-                p=p, 
-                q=q, 
-                mean=mean,
+                returns_clean,
+                vol=self.vol,
+                p=self.p,
+                q=self.q,
+                mean=self.mean,
                 dist='normal'
             )
             
@@ -73,7 +74,7 @@ class GARCHModel:
             self.fitted_model = self.model.fit(disp='off')
             self.params = self.fitted_model.params
             
-            logger.info(f"GARCH({p},{q}) model fitted successfully")
+            logger.info(f"GARCH({self.p},{self.q}) model fitted successfully")
             logger.info(f"Model parameters: {self.params}")
             
         except Exception as e:
@@ -158,10 +159,13 @@ class GARCHModel:
         rmse = np.sqrt(mse)
         
         # Direction accuracy
-        direction_correct = np.sum(
-            np.sign(actual_aligned.diff()) == np.sign(forecast_aligned.diff())
-        )
-        direction_accuracy = direction_correct / len(actual_aligned)
+        if len(actual_aligned) < 2:
+            direction_accuracy = np.nan
+        else:
+            direction_correct = np.sum(
+                np.sign(actual_aligned.diff()) == np.sign(forecast_aligned.diff())
+            )
+            direction_accuracy = direction_correct / len(actual_aligned)
         
         return {
             'mse': mse,
@@ -202,7 +206,11 @@ class RollingGARCH:
         forecasts = []
         actuals = []
         
-        for i in range(self.window_size, len(returns)):
+        if len(returns) < self.window_size + self.forecast_horizon:
+            raise ValueError("Not enough data for the requested window and horizon")
+
+        dates = []
+        for i in range(self.window_size, len(returns) - self.forecast_horizon + 1):
             # Training window
             train_returns = returns.iloc[i-self.window_size:i]
             
@@ -217,10 +225,11 @@ class RollingGARCH:
                 # Generate forecast
                 forecast = garch.forecast(self.forecast_horizon)
                 forecasts.extend(forecast.values)
-                
+
                 # Calculate actual volatility
                 actual_vol = test_returns.std() * np.sqrt(252)
                 actuals.extend([actual_vol] * self.forecast_horizon)
+                dates.extend(test_returns.index)
                 
             except Exception as e:
                 logger.warning(f"Error in rolling window {i}: {str(e)}")
@@ -228,9 +237,8 @@ class RollingGARCH:
                 actuals.extend([np.nan] * self.forecast_horizon)
         
         # Create series with proper dates
-        forecast_dates = returns.index[self.window_size:]
-        forecast_series = pd.Series(forecasts, index=forecast_dates)
-        actual_series = pd.Series(actuals, index=forecast_dates)
+        forecast_series = pd.Series(forecasts, index=dates)
+        actual_series = pd.Series(actuals, index=dates)
         
         return forecast_series, actual_series
 

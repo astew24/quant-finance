@@ -49,6 +49,7 @@ class LSTMModel:
         self.dropout = dropout
         self.model = None
         self.scaler = MinMaxScaler()
+        self.history = None
         
     def create_sequences(self, data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -169,6 +170,9 @@ class LSTMModel:
         """
         if self.model is None:
             raise ValueError("Model must be trained before prediction")
+
+        if len(data.dropna()) <= self.sequence_length:
+            raise ValueError("Not enough data to generate predictions")
             
         try:
             # Prepare data
@@ -213,6 +217,8 @@ class LSTMModel:
         try:
             # Get the last sequence
             data_clean = data.dropna()
+            if len(data_clean) < self.sequence_length:
+                raise ValueError("Not enough data to generate forecasts")
             last_sequence = data_clean.values[-self.sequence_length:].reshape(-1, 1)
             last_sequence_scaled = self.scaler.transform(last_sequence)
             
@@ -229,8 +235,8 @@ class LSTMModel:
                 forecasts.append(pred)
                 
                 # Update sequence for next prediction
-                current_sequence = np.roll(current_sequence, -1)
-                current_sequence[-1] = pred_scaled
+                current_sequence = np.roll(current_sequence, -1, axis=0)
+                current_sequence[-1, 0] = pred_scaled[0, 0]
             
             # Create forecast dates
             last_date = data_clean.index[-1]
@@ -268,10 +274,13 @@ class LSTMModel:
         rmse = np.sqrt(mse)
         
         # Direction accuracy
-        direction_correct = np.sum(
-            np.sign(actual_aligned.diff()) == np.sign(predicted_aligned.diff())
-        )
-        direction_accuracy = direction_correct / len(actual_aligned)
+        if len(actual_aligned) < 2:
+            direction_accuracy = np.nan
+        else:
+            direction_correct = np.sum(
+                np.sign(actual_aligned.diff()) == np.sign(predicted_aligned.diff())
+            )
+            direction_accuracy = direction_correct / len(actual_aligned)
         
         return {
             'mse': mse,
@@ -315,7 +324,11 @@ class RollingLSTM:
         forecasts = []
         actuals = []
         
-        for i in range(self.window_size, len(data)):
+        if len(data) < self.window_size + self.forecast_horizon:
+            raise ValueError("Not enough data for the requested window and horizon")
+
+        dates = []
+        for i in range(self.window_size, len(data) - self.forecast_horizon + 1):
             # Training window
             train_data = data.iloc[i-self.window_size:i]
             
@@ -330,9 +343,10 @@ class RollingLSTM:
                 # Generate forecast
                 forecast = lstm.forecast(train_data, self.forecast_horizon)
                 forecasts.extend(forecast.values)
-                
+
                 # Get actual values
                 actuals.extend(test_data.values)
+                dates.extend(test_data.index)
                 
             except Exception as e:
                 logger.warning(f"Error in rolling window {i}: {str(e)}")
@@ -340,9 +354,8 @@ class RollingLSTM:
                 actuals.extend([np.nan] * self.forecast_horizon)
         
         # Create series with proper dates
-        forecast_dates = data.index[self.window_size:]
-        forecast_series = pd.Series(forecasts, index=forecast_dates)
-        actual_series = pd.Series(actuals, index=forecast_dates)
+        forecast_series = pd.Series(forecasts, index=dates)
+        actual_series = pd.Series(actuals, index=dates)
         
         return forecast_series, actual_series
 

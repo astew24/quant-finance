@@ -32,21 +32,23 @@ class FactorRegression:
         residuals: Model residuals
     """
     
-    def __init__(self, method: str = 'ols', alpha: float = 1.0):
+    def __init__(self, method: str = 'ols', alpha: float = 1.0, scale_factors: bool = True):
         """
         Initialize factor regression.
         
         Args:
             method: Regression method ('ols' or 'ridge')
             alpha: Regularization parameter for Ridge regression
+            scale_factors: Whether to standardize factor inputs
         """
         self.method = method
         self.alpha = alpha
+        self.scale_factors = scale_factors
         self.model = None
         self.exposures = None
         self.r_squared = None
         self.residuals = None
-        self.scaler = StandardScaler()
+        self.scaler = StandardScaler() if scale_factors else None
         
     def fit(self, returns: pd.Series, factors: pd.DataFrame) -> 'FactorRegression':
         """
@@ -73,8 +75,11 @@ class FactorRegression:
             if len(returns_clean) == 0:
                 raise ValueError("No valid data points after removing NaN values")
             
-            # Scale factors
-            factors_scaled = self.scaler.fit_transform(factors_clean)
+            # Scale factors if enabled
+            if self.scale_factors:
+                factors_scaled = self.scaler.fit_transform(factors_clean)
+            else:
+                factors_scaled = factors_clean.values
             
             # Fit model
             if self.method == 'ols':
@@ -122,8 +127,11 @@ class FactorRegression:
             raise ValueError("Model must be fitted before prediction")
             
         try:
-            # Scale factors
-            factors_scaled = self.scaler.transform(factors)
+            # Scale factors if enabled
+            if self.scale_factors:
+                factors_scaled = self.scaler.transform(factors)
+            else:
+                factors_scaled = factors.values
             
             # Generate predictions
             predictions = self.model.predict(factors_scaled)
@@ -150,7 +158,8 @@ class FactorRegression:
             'exposures': self.exposures.to_dict(),
             'residuals_mean': self.residuals.mean(),
             'residuals_std': self.residuals.std(),
-            'alpha': self.alpha if self.method == 'ridge' else None
+            'alpha': self.alpha if self.method == 'ridge' else None,
+            'scale_factors': self.scale_factors
         }
 
 
@@ -174,7 +183,7 @@ class RollingFactorRegression:
         self.exposures_history = []
         self.r_squared_history = []
         
-    def fit_and_analyze(self, returns: pd.Series, factors: pd.DataFrame) -> pd.DataFrame:
+    def fit_and_analyze(self, returns: pd.Series, factors: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
         """
         Fit rolling factor regression and analyze time-varying exposures.
         
@@ -183,15 +192,19 @@ class RollingFactorRegression:
             factors: Factor returns DataFrame
             
         Returns:
-            DataFrame with time-varying factor exposures
+            Tuple of (exposures_df, r_squared_series)
         """
         # Align data
         common_index = returns.index.intersection(factors.index)
         returns_aligned = returns.loc[common_index]
         factors_aligned = factors.loc[common_index]
         
-        exposures_df = pd.DataFrame(index=returns_aligned.index[self.window_size:])
-        r_squared_series = pd.Series(index=returns_aligned.index[self.window_size:])
+        exposures_df = pd.DataFrame(
+            index=returns_aligned.index[self.window_size:],
+            columns=factors_aligned.columns,
+            dtype=float
+        )
+        r_squared_series = pd.Series(index=returns_aligned.index[self.window_size:], dtype=float)
         
         for i in range(self.window_size, len(returns_aligned)):
             # Training window
@@ -277,10 +290,13 @@ class RiskAttribution:
             Series with risk contribution of each factor
         """
         portfolio_risk = self.calculate_portfolio_risk(exposures, factor_cov)
-        
-        # Risk contribution = (factor_cov * exposures) / portfolio_risk
-        risk_contrib = (factor_cov @ exposures) / portfolio_risk
-        
+        if portfolio_risk == 0:
+            return pd.Series(np.zeros_like(exposures), index=exposures.index)
+
+        # Component contribution = exposures * marginal risk
+        marginal_risk = (factor_cov @ exposures) / portfolio_risk
+        risk_contrib = exposures * marginal_risk
+
         return pd.Series(risk_contrib, index=exposures.index)
     
     def calculate_marginal_risk(self, exposures: pd.Series,
@@ -296,10 +312,12 @@ class RiskAttribution:
             Series with marginal risk contribution of each factor
         """
         portfolio_risk = self.calculate_portfolio_risk(exposures, factor_cov)
-        
+        if portfolio_risk == 0:
+            return pd.Series(np.zeros_like(exposures), index=exposures.index)
+
         # Marginal risk contribution = (factor_cov * exposures) / portfolio_risk
         marginal_risk = (factor_cov @ exposures) / portfolio_risk
-        
+
         return pd.Series(marginal_risk, index=exposures.index)
 
 
