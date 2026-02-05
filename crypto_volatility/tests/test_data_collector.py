@@ -8,7 +8,7 @@ from data_collector import CryptoDataCollector
 
 class TestCryptoDataCollector(unittest.TestCase):
     def setUp(self):
-        self.collector = CryptoDataCollector()
+        self.collector = CryptoDataCollector(exchange=object())
 
     def test_calculate_returns(self):
         df = pd.DataFrame({'close': [100, 110, 121]})

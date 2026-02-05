@@ -5,12 +5,11 @@ This module handles data collection from Binance API for BTC and ETH price data.
 Provides functionality for historical data fetching and real-time data streaming.
 """
 
-import ccxt
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 import time
 
 # Configure logging
@@ -27,21 +26,31 @@ class CryptoDataCollector:
         symbols: List of trading pairs to collect data for
     """
     
-    def __init__(self, symbols: Optional[List[str]] = None) -> None:
+    def __init__(self, symbols: Optional[List[str]] = None, exchange: Optional[Any] = None) -> None:
         """
         Initialize the data collector.
         
         Args:
             symbols: List of trading pairs (default: ['BTC/USDT', 'ETH/USDT'])
+            exchange: Optional exchange client (used for testing or custom clients)
         """
-        self.exchange = ccxt.binance({
-            'enableRateLimit': True,
-            'options': {
-                'defaultType': 'spot'
-            }
-        })
+        if exchange is None:
+            try:
+                import ccxt  # type: ignore
+            except Exception as exc:
+                raise ImportError("ccxt is required to create a default exchange client") from exc
+            self.exchange = ccxt.binance({
+                'enableRateLimit': True,
+                'options': {
+                    'defaultType': 'spot'
+                }
+            })
+        else:
+            self.exchange = exchange
         
         self.symbols: List[str] = symbols or ['BTC/USDT', 'ETH/USDT']
+        if not all(isinstance(symbol, str) and symbol for symbol in self.symbols):
+            raise ValueError("All symbols must be non-empty strings")
         logger.info(f"Initialized CryptoDataCollector for symbols: {self.symbols}")
     
     def fetch_ohlcv(self, symbol: str, timeframe: str = '1d', 
@@ -58,6 +67,13 @@ class CryptoDataCollector:
         Returns:
             DataFrame with OHLCV data
         """
+        if not symbol:
+            raise ValueError("symbol must be a non-empty string")
+        if not timeframe:
+            raise ValueError("timeframe must be a non-empty string")
+        if limit <= 0:
+            raise ValueError("limit must be positive")
+
         try:
             # Convert datetime to timestamp if provided
             since_timestamp: Optional[int] = None
@@ -91,6 +107,8 @@ class CryptoDataCollector:
         Returns:
             Dictionary mapping symbols to their historical data
         """
+        if days_back <= 0:
+            raise ValueError("days_back must be positive")
         since: datetime = datetime.now() - timedelta(days=days_back)
         data: Dict[str, pd.DataFrame] = {}
         
@@ -113,6 +131,10 @@ class CryptoDataCollector:
         Returns:
             Series of log returns
         """
+        if 'close' not in df.columns:
+            raise KeyError("Input DataFrame must contain a 'close' column")
+        if (df['close'] <= 0).any():
+            raise ValueError("Prices must be positive to compute log returns")
         return np.log(df['close'] / df['close'].shift(1))
     
     def calculate_volatility(self, returns: pd.Series, window: int = 30) -> pd.Series:
@@ -126,6 +148,8 @@ class CryptoDataCollector:
         Returns:
             Series of rolling volatility
         """
+        if window <= 1:
+            raise ValueError("window must be greater than 1")
         return returns.rolling(window=window).std() * np.sqrt(252)  # Annualized
     
     def get_market_data(self, days_back: int = 365) -> Dict[str, Dict[str, pd.Series]]:
@@ -172,6 +196,8 @@ def save_data_to_csv(data: Dict[str, pd.DataFrame], output_dir: str = 'data') ->
     os.makedirs(output_dir, exist_ok=True)
     
     for symbol, df in data.items():
+        if df.empty:
+            continue
         filename: str = f"{symbol.replace('/', '_')}_data.csv"
         filepath: str = os.path.join(output_dir, filename)
         df.to_csv(filepath)

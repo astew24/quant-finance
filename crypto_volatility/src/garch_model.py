@@ -59,6 +59,8 @@ class GARCHModel:
         try:
             # Remove NaN values
             returns_clean = returns.dropna()
+            if len(returns_clean) < max(self.p, self.q) + 1:
+                raise ValueError("Not enough data to fit the GARCH model")
             
             # Create and fit GARCH model
             self.model = arch_model(
@@ -95,6 +97,8 @@ class GARCHModel:
         """
         if self.fitted_model is None:
             raise ValueError("Model must be fitted before forecasting")
+        if horizon <= 0:
+            raise ValueError("horizon must be positive")
             
         try:
             # Generate forecasts
@@ -152,6 +156,8 @@ class GARCHModel:
         common_index = actual_vol.index.intersection(forecast_vol.index)
         actual_aligned = actual_vol.loc[common_index]
         forecast_aligned = forecast_vol.loc[common_index]
+        if len(actual_aligned) == 0:
+            raise ValueError("No overlapping data between actual and forecast series")
         
         # Calculate metrics
         mse = mean_squared_error(actual_aligned, forecast_aligned)

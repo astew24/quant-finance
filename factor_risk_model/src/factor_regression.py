@@ -11,8 +11,6 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.metrics import r2_score, mean_squared_error
 from sklearn.preprocessing import StandardScaler
-import statsmodels.api as sm
-from statsmodels.regression.linear_model import OLS
 import logging
 from typing import Dict, List, Optional, Tuple
 import warnings

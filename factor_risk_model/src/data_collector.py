@@ -29,7 +29,7 @@ class StockDataCollector:
         end_date: End date for data collection
     """
     
-    def __init__(self, symbols: List[str] = None, start_date: str = None, end_date: str = None):
+    def __init__(self, symbols: Optional[List[str]] = None, start_date: Optional[str] = None, end_date: Optional[str] = None):
         """
         Initialize the data collector.
         
@@ -39,8 +39,15 @@ class StockDataCollector:
             end_date: End date for data collection
         """
         self.symbols = symbols or self._get_sp500_symbols()
+        if not all(isinstance(symbol, str) and symbol for symbol in self.symbols):
+            raise ValueError("All symbols must be non-empty strings")
+
         self.start_date = start_date or '2020-01-01'
         self.end_date = end_date or datetime.now().strftime('%Y-%m-%d')
+        start_dt = self._parse_date(self.start_date)
+        end_dt = self._parse_date(self.end_date)
+        if start_dt > end_dt:
+            raise ValueError("start_date must be before end_date")
         
         logger.info(f"Initialized StockDataCollector for {len(self.symbols)} symbols")
         logger.info(f"Date range: {self.start_date} to {self.end_date}")
@@ -68,6 +75,13 @@ class StockDataCollector:
             'EXC', 'XEL', 'AEP', 'WEC', 'DTE', 'SO', 'DUK', 'D', 'NEE'
         ]
         return sp500_symbols[:50]  # Limit to top 50 for demonstration
+
+    @staticmethod
+    def _parse_date(date_str: str) -> datetime:
+        try:
+            return datetime.strptime(date_str, '%Y-%m-%d')
+        except ValueError as exc:
+            raise ValueError(f"Invalid date format: {date_str}. Use YYYY-MM-DD.") from exc
     
     def fetch_stock_data(self, symbol: str) -> pd.DataFrame:
         """

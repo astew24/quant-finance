@@ -106,6 +106,8 @@ class LSTMModel:
         """
         # Remove NaN values
         data_clean = data.dropna()
+        if len(data_clean) <= self.sequence_length:
+            raise ValueError("Not enough data to build sequences")
         
         # Reshape for scaling
         data_reshaped = data_clean.values.reshape(-1, 1)
@@ -134,6 +136,11 @@ class LSTMModel:
             Self for method chaining
         """
         try:
+            if epochs <= 0:
+                raise ValueError("epochs must be positive")
+            if batch_size <= 0:
+                raise ValueError("batch_size must be positive")
+
             # Prepare data
             X, y, scaler = self.prepare_data(data)
             
@@ -213,6 +220,8 @@ class LSTMModel:
         """
         if self.model is None:
             raise ValueError("Model must be trained before forecasting")
+        if horizon <= 0:
+            raise ValueError("horizon must be positive")
             
         try:
             # Get the last sequence
