@@ -1,7 +1,7 @@
 """
-Crypto Volatility Forecasting -- Interactive Dashboard
+Crypto Volatility Forecasting Dashboard
 
-Streamlit app that wraps the existing GARCH pipeline.
+Wraps the existing GARCH pipeline into an interactive Streamlit app.
 Run with: streamlit run streamlit_app.py
 """
 
@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -17,6 +18,9 @@ from crypto_volatility.src.data_collector import CryptoDataCollector
 from crypto_volatility.src.garch_model import GARCHModel, compare_garch_models
 from crypto_volatility.src.metrics import calculate_rmse
 from crypto_volatility.src.risk_utils import calculate_var
+
+CHART_TEMPLATE = "plotly_dark"
+CHART_BG = "rgba(0,0,0,0)"
 
 # ---------------------------------------------------------------------------
 # Page config
@@ -29,22 +33,36 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------------------
-# Sidebar controls
+# Sidebar
 # ---------------------------------------------------------------------------
-st.sidebar.title("Settings")
+st.sidebar.title("Pipeline Settings")
 
-symbol = st.sidebar.selectbox("Asset", ["BTC-USD", "ETH-USD"], index=0)
-days_back = st.sidebar.slider("History (days)", 180, 1095, 730, step=30)
-vol_window = st.sidebar.slider("Volatility window (days)", 7, 90, 30)
+AVAILABLE_SYMBOLS = ["BTC-USD", "ETH-USD", "SOL-USD", "AVAX-USD", "DOGE-USD"]
+symbols = st.sidebar.multiselect(
+    "Assets", AVAILABLE_SYMBOLS, default=["BTC-USD", "ETH-USD"],
+)
+if not symbols:
+    symbols = ["BTC-USD"]
+
+days_back = st.sidebar.slider("History (days)", 365, 1825, 730, step=30,
+                               help="More history = more observations for training")
+vol_window = st.sidebar.slider("Volatility window", 7, 90, 30)
 forecast_horizon = st.sidebar.slider("Forecast horizon (days)", 1, 30, 10)
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("**Risk Monitoring**")
+alert_threshold = st.sidebar.slider(
+    "Vol alert threshold (x avg)", 1.0, 3.0, 1.5, 0.1,
+    help="Trigger alert when current vol exceeds this multiple of historical average"
+)
 
 run_btn = st.sidebar.button("Run Pipeline", type="primary", use_container_width=True)
 
 st.sidebar.markdown("---")
-st.sidebar.markdown(
-    "**How it works:** fetches real market data from Yahoo Finance, "
-    "fits a GARCH(1,1) model to capture volatility clustering, "
-    "and generates forward-looking volatility forecasts."
+st.sidebar.caption(
+    "Fetches live market data from Yahoo Finance. "
+    "Fits GARCH(1,1) to model volatility clustering and "
+    "generates forward-looking forecasts."
 )
 
 # ---------------------------------------------------------------------------
@@ -52,286 +70,448 @@ st.sidebar.markdown(
 # ---------------------------------------------------------------------------
 st.title("Crypto Volatility Forecasting")
 st.markdown(
-    "GARCH-based volatility modeling for cryptocurrency markets. "
-    "Select an asset and click **Run Pipeline** to fetch live data, "
-    "fit the model, and generate forecasts."
+    "End-to-end analytics pipeline for BTC/ETH volatility. "
+    "Fetches live market data, fits GARCH models, runs out-of-sample evaluation, "
+    "and monitors risk with VaR and volatility alerting."
 )
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Data fetching (cached)
 # ---------------------------------------------------------------------------
 @st.cache_data(ttl=300, show_spinner=False)
 def fetch_data(sym: str, days: int):
     collector = CryptoDataCollector(symbols=[sym])
-    from datetime import datetime, timedelta
     start = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
     df = collector.fetch_ohlcv(sym, start=start)
     if df.empty:
-        return df, pd.Series(dtype=float), pd.Series(dtype=float)
+        return df, pd.Series(dtype=float)
     returns = collector.calculate_returns(df).dropna()
-    return df, returns, returns
+    return df, returns
 
 
-def fit_garch(returns_pct: pd.Series, horizon: int):
-    garch = GARCHModel(p=1, q=1)
-    garch.fit(returns_pct)
-    summary = garch.get_model_summary()
-    forecast = garch.forecast(horizon=horizon)
-    return garch, summary, forecast
+def run_rolling_oos(returns_pct, window=252, step=5):
+    """Rolling out-of-sample 1-step GARCH evaluation.
+    Steps by `step` days to keep runtime reasonable on Streamlit Cloud."""
+    n = len(returns_pct)
+    if n < window + 1:
+        return None, None, {}
+
+    fc_vals, actual_vals, fc_dates = [], [], []
+    indices = range(window, n - 1, step)
+    for i in indices:
+        train = returns_pct.iloc[i - window:i]
+        try:
+            g = GARCHModel()
+            g.fit(train)
+            fc = g.forecast(horizon=1)
+            fc_vals.append(fc.values[0])
+            # actual next-day squared return as realised vol proxy
+            actual_vals.append(abs(returns_pct.iloc[i]))
+            fc_dates.append(returns_pct.index[i])
+        except Exception:
+            continue
+
+    if len(fc_vals) < 10:
+        return None, None, {}
+
+    fc_s = pd.Series(fc_vals, index=fc_dates)
+    actual_s = pd.Series(actual_vals, index=fc_dates)
+
+    # direction accuracy: did forecast direction match actual move direction?
+    if len(fc_s) > 1:
+        dir_correct = (np.sign(fc_s.diff().dropna()) == np.sign(actual_s.diff().dropna()))
+        dir_acc = dir_correct.mean()
+    else:
+        dir_acc = np.nan
+
+    rmse = float(np.sqrt(np.mean((fc_s.values - actual_s.values) ** 2)))
+    corr = float(np.corrcoef(fc_s.values, actual_s.values)[0, 1]) if len(fc_s) > 2 else np.nan
+
+    metrics = {
+        "direction_accuracy": dir_acc,
+        "oos_rmse": rmse,
+        "oos_correlation": corr,
+        "n_windows": len(fc_vals),
+    }
+    return fc_s, actual_s, metrics
 
 
 # ---------------------------------------------------------------------------
-# Main pipeline
+# Main
 # ---------------------------------------------------------------------------
 if run_btn:
-    with st.spinner(f"Fetching {symbol} data..."):
-        df, returns, _ = fetch_data(symbol, days_back)
+    all_data = {}
+    total_obs = 0
 
-    if df.empty:
-        st.error("Could not fetch data. Check your network connection and try again.")
+    # fetch all symbols
+    progress = st.progress(0, text="Fetching market data...")
+    for idx, sym in enumerate(symbols):
+        df, returns = fetch_data(sym, days_back)
+        if not df.empty:
+            all_data[sym] = {"df": df, "returns": returns}
+            total_obs += len(df)  # each row is a daily observation (OHLCV)
+        progress.progress((idx + 1) / len(symbols), text=f"Fetched {sym}")
+    progress.empty()
+
+    if not all_data:
+        st.error("Could not fetch data for any symbol. Check your connection.")
         st.stop()
 
-    col_name = "Close" if "Close" in df.columns else "close"
-    prices = df[col_name]
-
-    vol = CryptoDataCollector.calculate_volatility(returns, window=vol_window)
-
-    # fit GARCH
-    with st.spinner("Fitting GARCH(1,1) model..."):
-        returns_pct = returns * 100
-        garch, summary, forecast_pct = fit_garch(returns_pct, forecast_horizon)
-        cond_vol = summary["conditional_volatility"] / 100
-        forecast = forecast_pct / 100
-
     # -----------------------------------------------------------------------
-    # KPI row
+    # Top-level KPIs
     # -----------------------------------------------------------------------
     st.markdown("---")
+    total_data_points = sum(len(d["df"]) * len(d["df"].columns) for d in all_data.values())
+
     k1, k2, k3, k4 = st.columns(4)
-
-    ann_vol = returns.std() * np.sqrt(365)
-    var_95 = calculate_var(returns.values, 0.05)
-    var_99 = calculate_var(returns.values, 0.01)
-
-    k1.metric("Observations", f"{len(returns):,}")
-    k2.metric("Annualised Volatility", f"{ann_vol:.1%}")
-    k3.metric("VaR (95%)", f"{var_95:.2%}")
-    k4.metric("VaR (99%)", f"{var_99:.2%}")
+    k1.metric("Assets Analyzed", len(all_data))
+    k2.metric("Daily Observations", f"{total_obs:,}")
+    k3.metric("Total Data Points", f"{total_data_points:,}")
+    k4.metric("Forecast Horizon", f"{forecast_horizon}d")
 
     # -----------------------------------------------------------------------
-    # Price chart
+    # Per-symbol analysis
     # -----------------------------------------------------------------------
-    st.subheader(f"{symbol} Price History")
-    fig_price = go.Figure()
-    fig_price.add_trace(go.Scatter(
-        x=prices.index, y=prices.values,
-        mode="lines", name="Close",
-        line=dict(color="#3b82f6", width=1.5),
-    ))
-    fig_price.update_layout(
-        height=350, margin=dict(l=0, r=0, t=10, b=0),
-        yaxis_title="USD", xaxis_title="",
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-    )
-    st.plotly_chart(fig_price, use_container_width=True)
+    for sym, sdata in all_data.items():
+        st.markdown("---")
+        st.header(sym)
+
+        df = sdata["df"]
+        returns = sdata["returns"]
+        col_name = "Close" if "Close" in df.columns else "close"
+        prices = df[col_name]
+        vol = CryptoDataCollector.calculate_volatility(returns, window=vol_window)
+
+        # fit GARCH
+        returns_pct = returns * 100
+        with st.spinner(f"Fitting GARCH(1,1) on {sym}..."):
+            garch = GARCHModel(p=1, q=1)
+            garch.fit(returns_pct)
+            summary = garch.get_model_summary()
+            cond_vol = summary["conditional_volatility"] / 100
+            forecast_pct = garch.forecast(horizon=forecast_horizon)
+            forecast = forecast_pct / 100
+
+        ann_vol = returns.std() * np.sqrt(365)
+        var_95 = calculate_var(returns.values, 0.05)
+        var_99 = calculate_var(returns.values, 0.01)
+
+        # --- KPI row ---
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Observations", f"{len(returns):,}")
+        m2.metric("Annualised Vol", f"{ann_vol:.1%}")
+        m3.metric("VaR (95%)", f"{var_95:.2%}")
+        m4.metric("VaR (99%)", f"{var_99:.2%}")
+
+        # --- Volatility Alerting ---
+        rv_recent = vol.dropna()
+        if len(rv_recent) > 60:
+            current_vol = rv_recent.iloc[-1]
+            avg_vol = rv_recent.mean()
+            vol_ratio = current_vol / avg_vol if avg_vol > 0 else 0
+
+            if vol_ratio >= alert_threshold:
+                st.warning(
+                    f"**HIGH VOLATILITY ALERT** -- Current vol ({current_vol:.1%}) "
+                    f"is {vol_ratio:.1f}x the historical average ({avg_vol:.1%}). "
+                    f"Consider reducing position size or tightening stops."
+                )
+            else:
+                st.success(
+                    f"Volatility normal -- Current: {current_vol:.1%}, "
+                    f"Avg: {avg_vol:.1%} ({vol_ratio:.1f}x)"
+                )
+
+        # --- Charts row 1: Price + Returns ---
+        c1, c2 = st.columns(2)
+
+        with c1:
+            st.subheader("Price")
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=prices.index, y=prices.values,
+                mode="lines", line=dict(color="#3b82f6", width=1.5),
+            ))
+            fig.update_layout(
+                height=300, margin=dict(l=0, r=0, t=10, b=0),
+                yaxis_title="USD", template=CHART_TEMPLATE,
+                paper_bgcolor=CHART_BG, plot_bgcolor=CHART_BG,
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        with c2:
+            st.subheader("Return Distribution + VaR")
+            fig = go.Figure()
+            fig.add_trace(go.Histogram(
+                x=returns.values, nbinsx=80,
+                marker_color="#3b82f6", opacity=0.7,
+            ))
+            fig.add_vline(x=var_95, line_dash="dash", line_color="#ef4444",
+                          annotation_text=f"VaR 95%: {var_95:.2%}")
+            fig.add_vline(x=var_99, line_dash="dash", line_color="#f97316",
+                          annotation_text=f"VaR 99%: {var_99:.2%}")
+            fig.update_layout(
+                height=300, margin=dict(l=0, r=0, t=10, b=0),
+                xaxis_title="Daily log return", yaxis_title="Count",
+                template=CHART_TEMPLATE, showlegend=False,
+                paper_bgcolor=CHART_BG, plot_bgcolor=CHART_BG,
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        # --- Charts row 2: Volatility + Forecast ---
+        c3, c4 = st.columns(2)
+
+        with c3:
+            st.subheader("Realised vs GARCH Conditional Vol")
+            fig = go.Figure()
+            rv = vol.dropna()
+            fig.add_trace(go.Scatter(
+                x=rv.index, y=rv.values,
+                mode="lines", name=f"Realised ({vol_window}d)",
+                line=dict(color="#8b5cf6", width=1.2),
+            ))
+            fig.add_trace(go.Scatter(
+                x=cond_vol.index, y=cond_vol.values,
+                mode="lines", name="GARCH conditional",
+                line=dict(color="#f59e0b", width=1.2),
+            ))
+            # alert threshold line
+            if len(rv) > 0:
+                avg_v = rv.mean()
+                fig.add_hline(
+                    y=avg_v * alert_threshold, line_dash="dot",
+                    line_color="#ef4444", opacity=0.5,
+                    annotation_text=f"Alert ({alert_threshold}x avg)",
+                )
+            fig.update_layout(
+                height=300, margin=dict(l=0, r=0, t=10, b=0),
+                yaxis_title="Annualised vol", template=CHART_TEMPLATE,
+                paper_bgcolor=CHART_BG, plot_bgcolor=CHART_BG,
+                legend=dict(orientation="h", yanchor="bottom", y=1.02),
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        with c4:
+            st.subheader(f"{forecast_horizon}-Day Forecast")
+            # bridge from last conditional vol to forecast
+            bridge = pd.Series([cond_vol.iloc[-1]], index=[cond_vol.index[-1]])
+            fc_ext = pd.concat([bridge, forecast])
+
+            fig = go.Figure()
+            tail = cond_vol.iloc[-60:]
+            fig.add_trace(go.Scatter(
+                x=tail.index, y=tail.values,
+                mode="lines", name="Recent conditional",
+                line=dict(color="#f59e0b", width=1.5),
+            ))
+            fig.add_trace(go.Scatter(
+                x=fc_ext.index, y=fc_ext.values,
+                mode="lines+markers", name="Forecast",
+                line=dict(color="#10b981", width=2.5, dash="dot"),
+                marker=dict(size=7),
+            ))
+            fig.update_layout(
+                height=300, margin=dict(l=0, r=0, t=10, b=0),
+                yaxis_title="Daily vol", template=CHART_TEMPLATE,
+                paper_bgcolor=CHART_BG, plot_bgcolor=CHART_BG,
+                legend=dict(orientation="h", yanchor="bottom", y=1.02),
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        # --- Out-of-sample evaluation ---
+        with st.expander(f"Out-of-Sample Evaluation ({sym})", expanded=True):
+            with st.spinner("Running rolling out-of-sample GARCH..."):
+                fc_oos, actual_oos, oos_metrics = run_rolling_oos(
+                    returns_pct, window=min(252, len(returns_pct) // 2), step=5
+                )
+
+            if oos_metrics:
+                o1, o2, o3, o4 = st.columns(4)
+                dir_acc = oos_metrics["direction_accuracy"]
+                o1.metric("Direction Accuracy", f"{dir_acc:.0%}")
+                o2.metric("OOS RMSE", f"{oos_metrics['oos_rmse']:.4f}")
+                o3.metric("OOS Correlation", f"{oos_metrics['oos_correlation']:.3f}")
+                o4.metric("Eval Windows", f"{oos_metrics['n_windows']}")
+
+                # forecast vs actual scatter
+                fig = make_subplots(rows=1, cols=2,
+                                    subplot_titles=["Forecast vs Actual (OOS)",
+                                                    "Rolling Forecast Timeseries"])
+
+                fig.add_trace(go.Scatter(
+                    x=actual_oos.values, y=fc_oos.values,
+                    mode="markers", marker=dict(color="#3b82f6", size=4, opacity=0.6),
+                    name="OOS points",
+                ), row=1, col=1)
+                # 45-degree line
+                mn = min(actual_oos.min(), fc_oos.min())
+                mx = max(actual_oos.max(), fc_oos.max())
+                fig.add_trace(go.Scatter(
+                    x=[mn, mx], y=[mn, mx], mode="lines",
+                    line=dict(color="#ef4444", dash="dash"), name="Perfect fit",
+                ), row=1, col=1)
+
+                fig.add_trace(go.Scatter(
+                    x=actual_oos.index, y=actual_oos.values,
+                    mode="lines", name="Actual |return|",
+                    line=dict(color="#8b5cf6", width=1),
+                ), row=1, col=2)
+                fig.add_trace(go.Scatter(
+                    x=fc_oos.index, y=fc_oos.values,
+                    mode="lines", name="GARCH forecast",
+                    line=dict(color="#f59e0b", width=1),
+                ), row=1, col=2)
+
+                fig.update_layout(
+                    height=320, margin=dict(l=0, r=0, t=30, b=0),
+                    template=CHART_TEMPLATE,
+                    paper_bgcolor=CHART_BG, plot_bgcolor=CHART_BG,
+                    showlegend=True,
+                    legend=dict(orientation="h", yanchor="bottom", y=1.05),
+                )
+                fig.update_xaxes(title_text="Actual", row=1, col=1)
+                fig.update_yaxes(title_text="Forecast", row=1, col=1)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Not enough data for out-of-sample evaluation. Try increasing history.")
+
+        # --- Model details ---
+        with st.expander(f"Model Details ({sym})"):
+            d1, d2, d3 = st.columns(3)
+            d1.metric("AIC", f"{summary['aic']:.1f}")
+            d2.metric("BIC", f"{summary['bic']:.1f}")
+            d3.metric("Log-Likelihood", f"{summary['log_likelihood']:.1f}")
+
+            # in-sample eval
+            common = vol.dropna().index.intersection(cond_vol.index)
+            if len(common) > 0:
+                actual = vol.loc[common]
+                fitted = cond_vol.loc[common]
+                rmse_is = calculate_rmse(actual.values, fitted.values)
+                corr_is = float(np.corrcoef(actual.values, fitted.values)[0, 1])
+                e1, e2 = st.columns(2)
+                e1.metric("In-Sample RMSE", f"{rmse_is:.6f}")
+                e2.metric("In-Sample Correlation", f"{corr_is:.4f}")
+
+            params = summary["params"]
+            st.markdown("**GARCH(1,1) Parameters**")
+            st.dataframe(
+                pd.DataFrame({"Parameter": list(params.keys()),
+                               "Value": [f"{v:.6f}" for v in params.values()]}),
+                use_container_width=True, hide_index=True,
+            )
+
+            st.markdown("**Forecast Values**")
+            st.dataframe(
+                pd.DataFrame({"Date": [d.strftime("%Y-%m-%d") for d in forecast.index],
+                               "Forecast Vol": [f"{v:.6f}" for v in forecast.values]}),
+                use_container_width=True, hide_index=True,
+            )
 
     # -----------------------------------------------------------------------
-    # Returns distribution
+    # Model comparison across GARCH specs (using first symbol)
     # -----------------------------------------------------------------------
-    col_left, col_right = st.columns(2)
+    st.markdown("---")
+    st.header("Model Comparison")
 
-    with col_left:
-        st.subheader("Return Distribution")
-        fig_hist = go.Figure()
-        fig_hist.add_trace(go.Histogram(
-            x=returns.values, nbinsx=80,
-            marker_color="#3b82f6", opacity=0.7,
-            name="Daily returns",
-        ))
-        fig_hist.add_vline(x=var_95, line_dash="dash", line_color="#ef4444",
-                           annotation_text=f"VaR 95%: {var_95:.2%}")
-        fig_hist.add_vline(x=var_99, line_dash="dash", line_color="#f97316",
-                           annotation_text=f"VaR 99%: {var_99:.2%}")
-        fig_hist.update_layout(
-            height=320, margin=dict(l=0, r=0, t=10, b=0),
-            xaxis_title="Daily log return", yaxis_title="Count",
-            template="plotly_dark",
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            showlegend=False,
-        )
-        st.plotly_chart(fig_hist, use_container_width=True)
+    first_sym = list(all_data.keys())[0]
+    returns_first = all_data[first_sym]["returns"] * 100
 
-    # -----------------------------------------------------------------------
-    # Volatility chart
-    # -----------------------------------------------------------------------
-    with col_right:
-        st.subheader("Volatility: Realised vs GARCH")
-        fig_vol = go.Figure()
-        rv = vol.dropna()
-        fig_vol.add_trace(go.Scatter(
-            x=rv.index, y=rv.values,
-            mode="lines", name=f"Realised ({vol_window}d)",
-            line=dict(color="#8b5cf6", width=1.2),
-        ))
-        fig_vol.add_trace(go.Scatter(
-            x=cond_vol.index, y=cond_vol.values,
-            mode="lines", name="GARCH conditional",
-            line=dict(color="#f59e0b", width=1.2),
-        ))
-        fig_vol.update_layout(
-            height=320, margin=dict(l=0, r=0, t=10, b=0),
-            yaxis_title="Annualised vol", xaxis_title="",
-            template="plotly_dark",
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02),
-        )
-        st.plotly_chart(fig_vol, use_container_width=True)
-
-    # -----------------------------------------------------------------------
-    # Forecast chart
-    # -----------------------------------------------------------------------
-    st.subheader(f"{forecast_horizon}-Day Volatility Forecast")
-
-    # connect forecast to last conditional vol point
-    last_cond_date = cond_vol.index[-1]
-    last_cond_val = cond_vol.iloc[-1]
-    bridge = pd.Series([last_cond_val], index=[last_cond_date])
-    forecast_extended = pd.concat([bridge, forecast])
-
-    fig_fc = go.Figure()
-    # trailing conditional vol for context (last 60 days)
-    tail = cond_vol.iloc[-60:]
-    fig_fc.add_trace(go.Scatter(
-        x=tail.index, y=tail.values,
-        mode="lines", name="GARCH conditional (recent)",
-        line=dict(color="#f59e0b", width=1.5),
-    ))
-    fig_fc.add_trace(go.Scatter(
-        x=forecast_extended.index, y=forecast_extended.values,
-        mode="lines+markers", name="Forecast",
-        line=dict(color="#10b981", width=2.5, dash="dot"),
-        marker=dict(size=7),
-    ))
-    fig_fc.update_layout(
-        height=320, margin=dict(l=0, r=0, t=10, b=0),
-        yaxis_title="Daily vol (annualised)", xaxis_title="",
-        template="plotly_dark",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02),
-    )
-    st.plotly_chart(fig_fc, use_container_width=True)
-
-    # -----------------------------------------------------------------------
-    # Model details
-    # -----------------------------------------------------------------------
-    st.subheader("Model Details")
-
-    m1, m2, m3 = st.columns(3)
-    m1.metric("AIC", f"{summary['aic']:.1f}")
-    m2.metric("BIC", f"{summary['bic']:.1f}")
-    m3.metric("Log-Likelihood", f"{summary['log_likelihood']:.1f}")
-
-    # evaluation
-    common = vol.dropna().index.intersection(cond_vol.index)
-    if len(common) > 0:
-        actual = vol.loc[common]
-        fitted = cond_vol.loc[common]
-        rmse = calculate_rmse(actual.values, fitted.values)
-        corr = float(np.corrcoef(actual.values, fitted.values)[0, 1])
-
-        e1, e2 = st.columns(2)
-        e1.metric("In-Sample RMSE", f"{rmse:.6f}")
-        e2.metric("Correlation (realised vs conditional)", f"{corr:.4f}")
-
-    # GARCH parameters table
-    params = summary["params"]
-    st.markdown("**Estimated GARCH(1,1) Parameters**")
-    param_df = pd.DataFrame({
-        "Parameter": list(params.keys()),
-        "Value": [f"{v:.6f}" for v in params.values()],
-    })
-    st.dataframe(param_df, use_container_width=True, hide_index=True)
-
-    # forecast table
-    st.markdown("**Forecast Values**")
-    fc_df = pd.DataFrame({
-        "Date": [d.strftime("%Y-%m-%d") for d in forecast.index],
-        "Forecasted Vol": [f"{v:.6f}" for v in forecast.values],
-    })
-    st.dataframe(fc_df, use_container_width=True, hide_index=True)
-
-    # -----------------------------------------------------------------------
-    # Model comparison (GARCH specs)
-    # -----------------------------------------------------------------------
-    with st.expander("GARCH Specification Comparison"):
+    with st.spinner("Comparing GARCH specifications..."):
         specs = {
             "GARCH(1,1)": (1, 1),
             "GARCH(1,2)": (1, 2),
             "GARCH(2,1)": (2, 1),
             "GARCH(2,2)": (2, 2),
         }
-        with st.spinner("Comparing GARCH specifications..."):
-            comp = compare_garch_models(returns_pct, specs)
+        comp = compare_garch_models(returns_first, specs)
 
-        comp_rows = []
-        for name, res in comp.items():
-            if "error" in res:
-                continue
-            comp_rows.append({
-                "Model": name,
-                "AIC": f"{res['aic']:.1f}",
-                "BIC": f"{res['bic']:.1f}",
-                "Log-Likelihood": f"{res['log_likelihood']:.1f}",
-            })
-        if comp_rows:
-            st.dataframe(pd.DataFrame(comp_rows), use_container_width=True,
-                         hide_index=True)
+    comp_rows = []
+    for name, res in comp.items():
+        if "error" in res:
+            continue
+        comp_rows.append({
+            "Model": name,
+            "AIC": res["aic"],
+            "BIC": res["bic"],
+            "Log-Likelihood": res["log_likelihood"],
+        })
+
+    if comp_rows:
+        comp_df = pd.DataFrame(comp_rows)
+        best_aic = comp_df.loc[comp_df["AIC"].idxmin(), "Model"]
+
+        st.dataframe(comp_df.style.format({
+            "AIC": "{:.1f}", "BIC": "{:.1f}", "Log-Likelihood": "{:.1f}"
+        }), use_container_width=True, hide_index=True)
+        st.caption(f"Best model by AIC: **{best_aic}** (lower is better)")
+
+    # multi-symbol forecast comparison
+    if len(all_data) > 1:
+        st.subheader("Cross-Asset Forecast Comparison")
+        fig = go.Figure()
+        colors = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6"]
+        for idx, (sym, sdata) in enumerate(all_data.items()):
+            returns_s = sdata["returns"] * 100
+            try:
+                g = GARCHModel()
+                g.fit(returns_s)
+                fc = g.forecast(horizon=forecast_horizon)
+                fig.add_trace(go.Scatter(
+                    x=fc.index, y=(fc / 100).values,
+                    mode="lines+markers", name=sym,
+                    line=dict(color=colors[idx % len(colors)], width=2),
+                    marker=dict(size=6),
+                ))
+            except Exception:
+                pass
+        fig.update_layout(
+            height=350, margin=dict(l=0, r=0, t=10, b=0),
+            yaxis_title="Forecasted daily vol", xaxis_title="Date",
+            template=CHART_TEMPLATE,
+            paper_bgcolor=CHART_BG, plot_bgcolor=CHART_BG,
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
 else:
-    # landing state
+    # --- Landing page ---
     st.info("Configure settings in the sidebar and click **Run Pipeline** to start.")
 
     st.markdown("---")
-    st.markdown("### About This Project")
-    col1, col2 = st.columns(2)
-    with col1:
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
         st.markdown("""
-        **What it does**
-
-        Fetches real cryptocurrency market data and fits a GARCH(1,1) model
-        to capture volatility clustering -- the tendency for large price
-        moves to be followed by more large moves. The model generates
-        forward-looking volatility forecasts used in risk management.
-
-        **Data**
-
-        Daily OHLCV from Yahoo Finance (no API key needed). Supports
-        BTC-USD and ETH-USD with configurable history length.
+        ### Data Pipeline
+        Processes thousands of daily OHLCV observations
+        from BTC and ETH markets via Yahoo Finance.
+        Computes log returns and rolling realised volatility
+        across configurable time windows.
         """)
-    with col2:
+
+    with c2:
         st.markdown("""
-        **Models**
+        ### Forecasting Models
+        **GARCH(1,1)** captures volatility clustering --
+        the tendency for large moves to follow large moves.
+        Multiple specifications compared via AIC/BIC.
+        Out-of-sample rolling evaluation with direction accuracy.
 
-        - **GARCH(1,1)** -- Generalized Autoregressive Conditional
-          Heteroskedasticity. Captures time-varying volatility dynamics.
-        - Multiple GARCH specifications compared via AIC/BIC.
-        - LSTM model available in the codebase (optional, requires TensorFlow).
+        LSTM model available in codebase for deep learning comparison.
+        """)
 
-        **Risk Outputs**
-
-        - Annualised volatility
-        - Value-at-Risk at 95% and 99% confidence
-        - Multi-day ahead volatility forecasts
-        - In-sample model evaluation (RMSE, correlation)
+    with c3:
+        st.markdown("""
+        ### Risk Monitoring
+        **Value-at-Risk** at 95% and 99% confidence levels.
+        Real-time **volatility alerting** flags when current
+        vol exceeds a configurable threshold of historical average,
+        supporting position sizing and stop-loss decisions.
         """)
 
     st.markdown("---")
-    st.markdown(
-        "*Built with Python, arch, yfinance, and Streamlit. "
-        "Source on [GitHub](https://github.com/astew24/quant-finance).*"
+    st.caption(
+        "Built with Python, arch, yfinance, scikit-learn, and Streamlit. "
+        "Source: github.com/astew24/quant-finance"
     )
