@@ -10,10 +10,11 @@ venv/
 # Jupyter
 .ipynb_checkpoints/
 
-# Data artifacts
+# Data artifacts and outputs
 **/data/
 **/models/
 **/plots/
+output/
 
 # Tooling caches
 .pytest_cache/

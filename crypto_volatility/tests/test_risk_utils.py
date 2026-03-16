@@ -1,18 +1,24 @@
 import unittest
-import sys
-import os
+
 import numpy as np
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
-import risk_utils
+from crypto_volatility.src.risk_utils import calculate_var
 
 
 class TestRiskUtils(unittest.TestCase):
     def test_calculate_var(self):
         returns = np.array([-0.05, -0.02, 0.01, 0.02, 0.03])
-        var_5 = risk_utils.calculate_var(returns, confidence_level=0.05)
+        var_5 = calculate_var(returns, confidence_level=0.05)
         self.assertAlmostEqual(var_5, np.percentile(returns, 5), places=6)
 
+    def test_var_invalid_confidence(self):
+        with self.assertRaises(ValueError):
+            calculate_var([0.01, 0.02], confidence_level=1.5)
 
-if __name__ == '__main__':
+    def test_var_empty(self):
+        with self.assertRaises(ValueError):
+            calculate_var([], confidence_level=0.05)
+
+
+if __name__ == "__main__":
     unittest.main()

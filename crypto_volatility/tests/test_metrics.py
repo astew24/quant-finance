@@ -1,19 +1,26 @@
 import unittest
-import sys
-import os
+
 import numpy as np
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
-import metrics
+from crypto_volatility.src.metrics import calculate_rmse
 
 
 class TestMetrics(unittest.TestCase):
     def test_calculate_rmse(self):
         y_true = np.array([1.0, 2.0, 3.0])
         y_pred = np.array([1.0, 2.5, 2.0])
-        rmse = metrics.calculate_rmse(y_true, y_pred)
-        self.assertAlmostEqual(rmse, np.sqrt(((0.0)**2 + (0.5)**2 + (-1.0)**2) / 3), places=6)
+        rmse = calculate_rmse(y_true, y_pred)
+        expected = np.sqrt(((0.0) ** 2 + (0.5) ** 2 + (-1.0) ** 2) / 3)
+        self.assertAlmostEqual(rmse, expected, places=6)
+
+    def test_empty_inputs(self):
+        with self.assertRaises(ValueError):
+            calculate_rmse([], [])
+
+    def test_mismatched_shapes(self):
+        with self.assertRaises(ValueError):
+            calculate_rmse([1, 2], [1])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
