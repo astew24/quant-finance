@@ -1,86 +1,73 @@
-# Crypto Volatility Forecasting
+# Crypto Market Analytics Platform
 
-GARCH-based volatility forecasting for BTC and ETH with an interactive Streamlit dashboard and CLI pipeline.
+Volatility forecasting and risk monitoring for cryptocurrency markets, built with GARCH modeling, walk-forward backtesting, and interactive dashboards.
 
-Fetches real market data, fits conditional volatility models, generates multi-day forecasts, and computes Value-at-Risk -- all from live Yahoo Finance data with no API key required.
-
-**[Live Demo](https://quant-finance.streamlit.app)** (Streamlit Cloud)
+**[Live Demo](https://quant-finance.streamlit.app)**
 
 ## What it does
 
-- Pulls daily OHLCV data for BTC-USD and ETH-USD from Yahoo Finance
-- Computes log returns and rolling realised volatility
-- Fits a GARCH(1,1) model to capture volatility clustering
-- Generates n-day ahead volatility forecasts
-- Computes Value-at-Risk at 95% and 99% confidence levels
-- Compares multiple GARCH specifications (AIC/BIC)
-- Displays interactive Plotly charts: price history, return distribution, realised vs conditional volatility, forecast
+Fetches live BTC/ETH market data, fits GARCH(1,1) volatility models, and generates forward-looking forecasts -- validated against naive baselines with statistical significance testing.
+
+- **Market Overview** -- multi-asset price history, returns, drawdown, skewness
+- **Volatility Analysis** -- GARCH fitting, conditional vol vs realised, n-day forecasts, model comparison (AIC/BIC)
+- **Risk Monitoring** -- VaR, CVaR (Expected Shortfall), volatility regime detection, alerting
+- **Model Validation** -- walk-forward backtesting, comparison to Historical Vol / EWMA / Random Walk baselines, Diebold-Mariano test for statistical significance
+- **Methodology** -- documented approach, assumptions, and limitations
 
 ## Quickstart
 
 ```bash
-git clone https://github.com/astew24/quant-finance.git
-cd quant-finance
+git clone https://github.com/astew24/quant-finance.git && cd quant-finance
 python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-```
 
-### Run the dashboard
-
-```bash
+# run the dashboard
 streamlit run streamlit_app.py
-```
 
-### Run the CLI pipeline
-
-```bash
-python -m crypto_volatility
-python -m crypto_volatility --symbols BTC-USD --days 365 --horizon 20
-python -m crypto_volatility --no-plots -v
-```
-
-### Run tests
-
-```bash
-python -m pytest crypto_volatility/tests/ -v
+# or run the CLI pipeline
+python -m crypto_volatility --symbols BTC-USD ETH-USD --days 730 --horizon 10
 ```
 
 ## Project layout
 
 ```
-streamlit_app.py               # interactive dashboard
+streamlit_app.py                 # interactive dashboard (5 tabs)
 crypto_volatility/
-  __main__.py                  # CLI entrypoint
-  config.py                    # pipeline defaults
+  __main__.py                    # CLI entrypoint
+  config.py                     # pipeline defaults
   src/
-    data_collector.py          # yfinance data fetching + returns/vol
-    garch_model.py             # GARCH fitting, forecasting, comparison
-    lstm_model.py              # LSTM model (optional, needs tensorflow)
-    pipeline.py                # end-to-end orchestration
-    visualize.py               # static matplotlib charts
-    metrics.py                 # RMSE
-    risk_utils.py              # VaR
-    utils.py                   # data cleaning
-  tests/                       # 21 unit tests
-factor_risk_model/             # separate equity factor model project
+    data_collector.py            # yfinance data + returns/vol
+    garch_model.py               # GARCH fitting, forecasting, rolling window, comparison
+    backtesting.py               # walk-forward eval, baselines, Diebold-Mariano test
+    risk_utils.py                # VaR, CVaR, regime detection
+    lstm_model.py                # LSTM model (optional, needs TensorFlow)
+    pipeline.py                  # end-to-end orchestration
+    visualize.py                 # static matplotlib charts
+    metrics.py                   # RMSE
+    utils.py                     # data cleaning
+  tests/                         # 32 unit tests
+factor_risk_model/               # separate equity factor model project
+```
+
+## Tests
+
+```bash
+python -m pytest crypto_volatility/tests/ -v   # 32 tests
+python -m pytest factor_risk_model/tests/ -v    # 5 tests
 ```
 
 ## Deployment
 
-Deployed on Streamlit Cloud. To deploy your own:
+Deployed on Streamlit Cloud. To deploy your own fork:
 
 1. Fork this repo
 2. Go to [share.streamlit.io](https://share.streamlit.io)
-3. Point it at your fork, branch `main`, file `streamlit_app.py`
-4. Deploy -- dependencies install automatically from `requirements.txt`
+3. Point at your fork, branch `main`, file `streamlit_app.py`
+4. Deploy
 
 ## Tech stack
 
-Python, arch (GARCH), yfinance, Streamlit, Plotly, scikit-learn, NumPy/Pandas
-
-## Also in this repo
-
-**Factor Risk Model** -- Multi-factor equity model (Market, SMB, HML, Momentum) with OLS/Ridge regression and risk attribution. See `factor_risk_model/`.
+Python, arch (GARCH), yfinance, SciPy, scikit-learn, Plotly, Streamlit, NumPy/Pandas
 
 ---
 
