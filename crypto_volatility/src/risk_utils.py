@@ -36,6 +36,10 @@ def detect_regimes(vol_series, n_regimes: int = 2):
 
     Splits into low-vol and high-vol regimes using the median as boundary.
     Returns a Series of regime labels (0 = low, 1 = high) and the threshold.
+
+    Note: only binary regime detection is implemented right now — n_regimes
+    values other than 2 are ignored. Would need quantile-based splitting for
+    more than two regimes.
     """
     import pandas as pd
     vol_clean = vol_series.dropna()
