@@ -1,9 +1,9 @@
-# CI dependencies – enough to run all unit tests
-numpy>=1.24,<2.0
-pandas>=2.0,<3.0
-scipy>=1.10
-scikit-learn>=1.2
-arch>=6.0,<8.0
-yfinance>=0.2.18
-matplotlib>=3.7
-pytest>=7.0
+# CI dependencies
+numpy>=1.26
+pandas>=2.2
+scipy>=1.12
+scikit-learn>=1.5
+arch>=7.0
+yfinance>=0.2.54
+matplotlib>=3.9
+pytest>=8.3

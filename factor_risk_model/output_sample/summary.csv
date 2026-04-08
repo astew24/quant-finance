@@ -1,0 +1,2 @@
+observations,total_return,annual_return,annual_volatility,sharpe_ratio,sortino_ratio,max_drawdown,hit_rate,average_turnover,benchmark_total_return,tracking_error,information_ratio,mean_information_coefficient,information_coefficient_ir,selection_quantile,transaction_cost_bps
+1260,0.6789752676199201,0.10919744302332135,0.17509276359604423,0.6236548032062039,0.9091549537041688,-0.3817232002566351,0.5285714285714286,1.25,2.1564469893326095,0.2772282140799932,-0.561307029802371,0.12902097902097903,0.3006526291148281,0.2,10.0

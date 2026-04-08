@@ -40,7 +40,7 @@ class GARCHModel:
         self.fitted_model = self.model.fit(disp='off')
         self.params = self.fitted_model.params
 
-        logger.info(f"GARCH({self.p},{self.q}) fitted -- params: {dict(self.params)}")
+        logger.debug(f"GARCH({self.p},{self.q}) fitted -- params: {dict(self.params)}")
         return self
 
     def forecast(self, horizon: int = 1) -> pd.Series:

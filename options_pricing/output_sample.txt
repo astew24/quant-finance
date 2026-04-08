@@ -1,0 +1,12 @@
+Options Pricing Toolkit
+============================================================
+Black-Scholes price : 9.4134
+Implied volatility  : 20.0000%
+Monte Carlo price   : 9.4158 +/- 0.1241
+American tree price : 9.4035
+Greeks:
+  delta   0.5987
+  gamma   0.0193
+  vega    0.3867
+  theta  -0.0147
+  rho     0.5046

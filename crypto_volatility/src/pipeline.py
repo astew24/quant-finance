@@ -13,17 +13,22 @@ import numpy as np
 import pandas as pd
 
 from crypto_volatility.config import (
+    ANNUALISATION_FACTOR,
     DEFAULT_DAYS_BACK,
     DEFAULT_SYMBOLS,
     FORECAST_HORIZON,
     GARCH_P,
     GARCH_Q,
+    ROLLING_WINDOW,
     VOLATILITY_WINDOW,
 )
+from crypto_volatility.src.backtesting import run_full_backtest
 from crypto_volatility.src.data_collector import CryptoDataCollector
 from crypto_volatility.src.garch_model import GARCHModel
 from crypto_volatility.src.metrics import calculate_rmse
+from crypto_volatility.src.performance import summarize_strategy
 from crypto_volatility.src.risk_utils import calculate_var
+from crypto_volatility.src.strategy import run_volatility_target_strategy
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +43,14 @@ class PipelineResult:
     forecast: pd.Series = field(default_factory=pd.Series)
     model_summary: Dict = field(default_factory=dict)
     eval_metrics: Dict = field(default_factory=dict)
+    backtest_metrics: Dict = field(default_factory=dict)
+    baseline_metrics: Dict[str, Dict] = field(default_factory=dict)
+    dm_test_results: Dict[str, Dict[str, float]] = field(default_factory=dict)
+    strategy_summary: Dict = field(default_factory=dict)
+    benchmark_summary: Dict = field(default_factory=dict)
+    strategy_returns: pd.Series = field(default_factory=pd.Series)
+    strategy_positions: pd.Series = field(default_factory=pd.Series)
+    strategy_turnover: pd.Series = field(default_factory=pd.Series)
     var_95: float = 0.0
     var_99: float = 0.0
 
@@ -122,6 +135,59 @@ def run_pipeline(
             }
             logger.info(f"  RMSE: {rmse:.6f}  Corr: {corr:.4f}")
 
+        # 5b) walk-forward backtest + volatility-managed overlay
+        backtest_window = min(ROLLING_WINDOW, max(120, len(returns_pct) // 2))
+        if len(returns_pct) >= backtest_window + 10:
+            garch_backtest, baselines, dm_tests = run_full_backtest(
+                returns_pct,
+                window=backtest_window,
+                step=1,
+            )
+            result.backtest_metrics = {
+                "rmse": garch_backtest.rmse,
+                "mae": garch_backtest.mae,
+                "mse": garch_backtest.mse,
+                "direction_accuracy": garch_backtest.direction_accuracy,
+                "n_windows": garch_backtest.n_windows,
+            }
+            result.baseline_metrics = {
+                name: {
+                    "rmse": baseline.rmse,
+                    "mae": baseline.mae,
+                    "direction_accuracy": baseline.direction_accuracy,
+                    "n_windows": baseline.n_windows,
+                }
+                for name, baseline in baselines.items()
+            }
+            result.dm_test_results = {
+                name: {"stat": stat, "p_value": p_value}
+                for name, (stat, p_value) in dm_tests.items()
+            }
+
+            strategy = run_volatility_target_strategy(
+                result.returns,
+                garch_backtest.forecasts / 100.0,
+                target_annual_vol=0.35,
+                max_leverage=2.0,
+                transaction_cost_bps=10.0,
+                periods_per_year=ANNUALISATION_FACTOR,
+            )
+            result.strategy_returns = strategy.net_returns
+            result.strategy_positions = strategy.positions
+            result.strategy_turnover = strategy.turnover
+            result.strategy_summary = strategy.summary
+            result.benchmark_summary = strategy.benchmark_summary
+            logger.info(
+                "  Strategy Sharpe: %.3f  MaxDD: %.2f%%  Avg leverage: %.2f",
+                strategy.summary["sharpe_ratio"],
+                strategy.summary["max_drawdown"] * 100,
+                strategy.summary["average_leverage"],
+            )
+        else:
+            result.benchmark_summary = summarize_strategy(
+                result.returns, periods_per_year=ANNUALISATION_FACTOR
+            )
+
         # 6) risk metrics
         result.var_95 = calculate_var(result.returns.values, 0.05)
         result.var_99 = calculate_var(result.returns.values, 0.01)
@@ -156,6 +222,15 @@ def _save_outputs(results: Dict[str, PipelineResult], output_dir: str) -> None:
             os.path.join(output_dir, f"{safe}_forecast.csv"),
             header=["forecast_vol"],
         )
+        if not r.strategy_returns.empty:
+            strategy = pd.DataFrame(
+                {
+                    "strategy_returns": r.strategy_returns,
+                    "position": r.strategy_positions,
+                    "turnover": r.strategy_turnover,
+                }
+            )
+            strategy.to_csv(os.path.join(output_dir, f"{safe}_strategy.csv"))
 
         rows.append({
             "symbol": sym,
@@ -167,6 +242,9 @@ def _save_outputs(results: Dict[str, PipelineResult], output_dir: str) -> None:
             "GARCH_AIC": r.model_summary.get("aic"),
             "GARCH_BIC": r.model_summary.get("bic"),
             **r.eval_metrics,
+            **{f"garch_backtest_{k}": v for k, v in r.backtest_metrics.items()},
+            **{f"strategy_{k}": v for k, v in r.strategy_summary.items()},
+            **{f"buy_hold_{k}": v for k, v in r.benchmark_summary.items()},
         })
 
     pd.DataFrame(rows).to_csv(os.path.join(output_dir, "summary.csv"), index=False)
@@ -198,6 +276,33 @@ def generate_report(results: Dict[str, PipelineResult]) -> str:
         if r.eval_metrics:
             lines.append(f"  RMSE         : {r.eval_metrics['in_sample_rmse']:.6f}")
             lines.append(f"  Correlation  : {r.eval_metrics['correlation']:.4f}")
+
+        if r.backtest_metrics:
+            lines.append("  Walk-forward backtest:")
+            lines.append(f"    RMSE       : {r.backtest_metrics['rmse']:.6f}")
+            lines.append(
+                f"    Direction  : {r.backtest_metrics['direction_accuracy']:.2%}"
+            )
+            for name, baseline in r.baseline_metrics.items():
+                dm = r.dm_test_results.get(name, {})
+                p_val = dm.get("p_value")
+                lines.append(
+                    f"    vs {name:<14} RMSE={baseline['rmse']:.6f}  "
+                    f"DM p-value={p_val:.4f}" if p_val is not None else
+                    f"    vs {name:<14} RMSE={baseline['rmse']:.6f}"
+                )
+
+        if r.strategy_summary:
+            lines.append("  Vol-managed overlay:")
+            lines.append(
+                f"    Sharpe     : {r.strategy_summary['sharpe_ratio']:.3f}"
+            )
+            lines.append(
+                f"    Max drawdown: {r.strategy_summary['max_drawdown']:.2%}"
+            )
+            lines.append(
+                f"    Avg leverage: {r.strategy_summary['average_leverage']:.2f}"
+            )
 
         lines.append(f"  Forecast ({len(r.forecast)}d):")
         for date, val in r.forecast.items():
