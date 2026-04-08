@@ -36,9 +36,37 @@ def main(argv=None) -> None:
         help="One-way transaction cost in basis points",
     )
     parser.add_argument(
+        "--backtest-universe",
+        choices=["default", "sp500"],
+        default="default",
+        help="Select the historical backtest universe",
+    )
+    parser.add_argument(
+        "--backtest-limit",
+        type=int,
+        help="Optional cap on backtest universe size",
+    )
+    parser.add_argument(
         "--screening-symbols",
         nargs="+",
         help="Override the default screening universe",
+    )
+    parser.add_argument(
+        "--screening-universe",
+        choices=["default", "sp500"],
+        default="default",
+        help="Select the screening universe",
+    )
+    parser.add_argument(
+        "--screening-limit",
+        type=int,
+        help="Optional cap on screening universe size",
+    )
+    parser.add_argument(
+        "--thesis-top-n",
+        type=int,
+        default=5,
+        help="Number of top ideas to include in the thesis report",
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
     args = parser.parse_args(argv)
@@ -57,7 +85,12 @@ def main(argv=None) -> None:
         rebalance_frequency=args.rebalance_frequency,
         selection_quantile=args.selection_quantile,
         transaction_cost_bps=args.transaction_cost_bps,
+        backtest_universe=args.backtest_universe,
+        backtest_limit=args.backtest_limit,
         screening_symbols=args.screening_symbols,
+        screening_universe=args.screening_universe,
+        screening_limit=args.screening_limit,
+        thesis_top_n=args.thesis_top_n,
     )
     print(generate_report(result))
 

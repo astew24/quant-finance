@@ -4,7 +4,7 @@ Implementation: [`/options_pricing`](/Users/andrewstewart/quant-finance/quant-fi
 
 ## Problem Statement
 
-Derivatives interviews often expose whether a project portfolio is broad or narrow. This project exists to show that the repo is not only about factor research or backtesting, but also covers pricing, calibration, and numerical methods.
+This project implements a compact derivatives pricing stack covering closed-form valuation, calibration, and numerical pricing methods in one package.
 
 ## Methodology
 
@@ -37,8 +37,8 @@ Sample contract:
 - `numpy`
 - `scipy`
 
-## Why It Matters for Finance
+## Why This Project Matters
 
 - Shows closed-form pricing and numerical approximations in the same package
 - Demonstrates calibration logic, not just valuation formulas
-- Makes the portfolio look more complete for quant trading, derivatives, and quant dev roles
+- Captures the core building blocks used in options research and derivatives tooling

@@ -41,12 +41,8 @@ Risk results:
 - `yfinance`
 - Plotly and Streamlit
 
-## Why It Matters for Finance
+## Why This Workflow Matters
 
 - Connects forecasting research to actual risk sizing
 - Uses walk-forward testing instead of relying on in-sample fit
-- Looks like systematic risk research, not a generic dashboard toy
-
-## Portfolio Value
-
-This project signals that you can move from raw market data to a forecast, benchmark it properly, and convert it into a decision variable a PM or risk manager would care about.
+- Connects model output to a decision variable a PM or risk manager would actually use

@@ -60,6 +60,16 @@ def _safe_zscore(series: pd.Series, higher_is_better: bool = True) -> pd.Series:
     return ((clean - clean.mean()) / std).fillna(0.0)
 
 
+def _fundamental_column(
+    fundamentals: pd.DataFrame,
+    column: str,
+    default: float | str | None = np.nan,
+) -> pd.Series:
+    if column in fundamentals.columns:
+        return fundamentals[column]
+    return pd.Series(default, index=fundamentals.index)
+
+
 def build_factor_screen(
     prices: pd.DataFrame,
     fundamentals: pd.DataFrame,
@@ -115,14 +125,23 @@ def build_factor_screen(
     ).mean(axis=1)
 
     screen = pd.DataFrame(index=price_frame.columns)
-    screen["name"] = fundamentals["shortName"]
-    screen["sector"] = fundamentals["sector"]
-    screen["trailing_pe"] = fundamentals["trailingPE"]
-    screen["forward_pe"] = fundamentals["forwardPE"]
-    screen["price_to_book"] = fundamentals["priceToBook"]
-    screen["return_on_equity"] = fundamentals["returnOnEquity"]
-    screen["profit_margin"] = fundamentals["profitMargins"]
-    screen["debt_to_equity"] = fundamentals["debtToEquity"]
+    screen["name"] = _fundamental_column(fundamentals, "shortName", default=None)
+    screen["sector"] = _fundamental_column(fundamentals, "sector", default=None)
+    screen["trailing_pe"] = _fundamental_column(fundamentals, "trailingPE")
+    screen["forward_pe"] = _fundamental_column(fundamentals, "forwardPE")
+    screen["price_to_book"] = _fundamental_column(fundamentals, "priceToBook")
+    screen["return_on_equity"] = _fundamental_column(fundamentals, "returnOnEquity")
+    screen["profit_margin"] = _fundamental_column(fundamentals, "profitMargins")
+    screen["debt_to_equity"] = _fundamental_column(fundamentals, "debtToEquity")
+    screen["free_cashflow"] = _fundamental_column(fundamentals, "freeCashflow")
+    screen["shares_outstanding"] = _fundamental_column(fundamentals, "sharesOutstanding")
+    screen["total_cash"] = _fundamental_column(fundamentals, "totalCash")
+    screen["total_debt"] = _fundamental_column(fundamentals, "totalDebt")
+    screen["beta"] = _fundamental_column(fundamentals, "beta")
+    screen["revenue_growth"] = _fundamental_column(fundamentals, "revenueGrowth")
+    screen["earnings_growth"] = _fundamental_column(fundamentals, "earningsGrowth")
+    screen["currentPrice"] = _fundamental_column(fundamentals, "currentPrice")
+    screen["targetMeanPrice"] = _fundamental_column(fundamentals, "targetMeanPrice")
     screen["momentum_12_1"] = momentum_12_1
     screen["momentum_6_1"] = momentum_6_1
     screen["trailing_return_1m"] = trailing_return_1m
@@ -244,6 +263,8 @@ def fit_return_classifier(
     metrics = {
         "train_rows": int(len(train)),
         "test_rows": int(len(test)),
+        "screening_universe_size": int(dataset["symbol"].nunique()),
+        "rebalance_dates": int(len(unique_dates)),
         "holdout_accuracy": float(accuracy_score(test["target"], predictions)),
         "holdout_precision": float(
             precision_score(test["target"], predictions, zero_division=0)

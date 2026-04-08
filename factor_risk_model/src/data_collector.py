@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import os
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
@@ -66,6 +68,15 @@ FUNDAMENTAL_NUMERIC_FIELDS = [
     "operatingMargins",
     "currentRatio",
     "debtToEquity",
+    "freeCashflow",
+    "sharesOutstanding",
+    "totalCash",
+    "totalDebt",
+    "beta",
+    "revenueGrowth",
+    "earningsGrowth",
+    "currentPrice",
+    "targetMeanPrice",
 ]
 
 FUNDAMENTAL_TEXT_FIELDS = [
@@ -103,7 +114,7 @@ class StockDataCollector:
             end=self.end_date,
             progress=False,
             auto_adjust=True,
-            threads=False,
+            threads=True,
         )
         if data.empty:
             return pd.DataFrame()
@@ -133,11 +144,19 @@ class StockDataCollector:
         return prices.pct_change().dropna(how="all")
 
     @staticmethod
-    def fetch_fundamental_snapshot(symbols: List[str]) -> pd.DataFrame:
+    def fetch_fundamental_snapshot(
+        symbols: List[str],
+        cache_path: Optional[str] = None,
+        max_workers: int = 12,
+        force_refresh: bool = False,
+    ) -> pd.DataFrame:
         """Fetch a current fundamental snapshot for the screener."""
 
-        rows = []
-        for symbol in symbols:
+        if cache_path and os.path.exists(cache_path) and not force_refresh:
+            snapshot = pd.read_csv(cache_path, index_col="symbol")
+            return snapshot.sort_index()
+
+        def fetch_one(symbol: str) -> dict:
             try:
                 info = yf.Ticker(symbol).get_info()
             except Exception as exc:
@@ -149,9 +168,18 @@ class StockDataCollector:
                 row[field] = info.get(field)
             for field in FUNDAMENTAL_NUMERIC_FIELDS:
                 row[field] = info.get(field)
-            rows.append(row)
+            return row
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            rows = list(executor.map(fetch_one, symbols))
 
         snapshot = pd.DataFrame(rows).set_index("symbol")
         for field in FUNDAMENTAL_NUMERIC_FIELDS:
             snapshot[field] = pd.to_numeric(snapshot[field], errors="coerce")
-        return snapshot.sort_index()
+        snapshot = snapshot.sort_index()
+
+        if cache_path:
+            os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+            snapshot.to_csv(cache_path)
+
+        return snapshot

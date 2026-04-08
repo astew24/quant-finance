@@ -1,20 +1,22 @@
-# Equity Factor Screening Pipeline
+# Quantamental Equity Research Platform
 
 Implementation: [`/factor_risk_model`](/Users/andrewstewart/quant-finance/quant-finance-1/factor_risk_model)
 
 ## Problem Statement
 
-Recruiters see a lot of generic “factor investing” repos that stop at ranking a few tickers or running a single regression. This project is built to look more like actual buy-side research:
+This project combines a live factor screener, a linked factor research engine, and a quantamental thesis layer:
 
 1. screen names on value, momentum, and quality
 2. estimate forward outperformance probability with scikit-learn
 3. link the screen to a long-short research engine with turnover, drawdown, IC, and factor attribution
+4. generate short valuation-aware research briefs for the top-ranked names
 
 ## Methodology
 
 ### Live Screener
 
 - Universe: 24 liquid large-cap U.S. equities
+- Optional broad-universe mode: current S&P 500 constituents (`500+` symbols)
 - Data: Yahoo Finance prices plus a current fundamental snapshot
 - Value signals:
   - trailing P/E
@@ -36,7 +38,8 @@ Recruiters see a lot of generic “factor investing” repos that stop at rankin
 
 ### Research Backtest
 
-- Separate 12-name liquid universe for reproducible factor testing
+- Default 12-name liquid universe for reproducible factor testing
+- Optional S&P 500 mode for broader systematic-equity experiments
 - Signals:
   - `momentum_12_1`
   - `short_term_reversal`
@@ -66,6 +69,13 @@ Latest top-ranked names from the live screen:
 4. `COP`
 5. `GS`
 
+The project also generates a markdown research brief for the top names with:
+
+- sector-relative valuation
+- a simple FCF DCF fair-value estimate
+- trailing 1Y return, volatility, and Sharpe
+- consensus target upside when available
+
 ### Backtest
 
 Evaluation window: **January 3, 2020 to April 7, 2026**
@@ -87,11 +97,11 @@ Evaluation window: **January 3, 2020 to April 7, 2026**
 - `yfinance`
 - `scikit-learn`
 
-## Why It Matters for Finance
+## Why This Project Matters
 
-- Puts a current screener and a research backtest in the same project instead of treating them as unrelated exercises
-- Shows awareness of both alpha generation and evaluation discipline
-- Gives you a clean, human-sounding resume story: factor ranking, ML prediction, and backtest attribution in one codebase
+- Puts screening, backtesting, attribution, and top-idea generation in one codebase
+- Separates current-state fundamental screening from reproducible historical testing
+- Extends beyond factor sorting into valuation-aware idea generation
 
 ## Notes
 

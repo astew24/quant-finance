@@ -1,0 +1,2 @@
+start_date,end_date,backtest_universe,backtest_universe_size,screening_universe,screening_universe_size,rebalance_frequency,selection_quantile,transaction_cost_bps
+2020-01-02,2026-04-07,default,12,default,24,63,0.2,10.0

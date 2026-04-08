@@ -1,13 +1,14 @@
-# Equity Factor Screening Pipeline and Cross-Sectional Alpha Research
+# Quantamental Equity Research Platform
 
 ## Problem Statement
 
-This project combines two workflows that actually belong together in a quant portfolio:
+This project combines three workflows that fit together in systematic equity research:
 
 1. a live equity factor screener that ranks names on value, momentum, and quality
 2. a research backtest that checks whether related factor signals survive transaction costs and portfolio construction rules
+3. a quantamental thesis layer that turns the highest-ranked names into short valuation-aware research briefs
 
-The point is not just to sort stocks. It is to show a full chain from raw data to ranking logic, ML-assisted return prediction, backtesting, and attribution.
+The goal is to build a full chain from raw data to ranking logic, ML-assisted return prediction, backtesting, attribution, and top-idea generation.
 
 ## Methodology
 
@@ -16,6 +17,7 @@ The point is not just to sort stocks. It is to show a full chain from raw data t
 - 24 liquid U.S. large-cap equities
 - Price history from Yahoo Finance
 - Current fundamental snapshot from Yahoo Finance for value and quality inputs
+- Optional S&P 500 mode for broad-universe screening and backtesting
 
 ### Screener Factors
 
@@ -73,6 +75,13 @@ The point is not just to sort stocks. It is to show a full chain from raw data t
 - Regress strategy returns on factor-mimicking portfolios plus the equal-weight market benchmark
 - Report estimated factor betas and model `R^2`
 
+### Quantamental Thesis Layer
+
+- Builds a short markdown brief for the top-ranked names
+- Compares forward P/E against sector medians
+- Estimates a simple free-cash-flow DCF fair value per share
+- Reports trailing 1Y return, volatility, Sharpe, and consensus target upside
+
 ## Results
 
 ### Screener Metrics
@@ -124,11 +133,13 @@ Additional attribution detail:
 Sample outputs:
 
 - [`output_sample/summary.csv`](./output_sample/summary.csv)
+- [`output_sample/run_metadata.csv`](./output_sample/run_metadata.csv)
 - [`output_sample/factor_exposures.csv`](./output_sample/factor_exposures.csv)
 - [`output_sample/information_coefficient.csv`](./output_sample/information_coefficient.csv)
 - [`output_sample/latest_screen.csv`](./output_sample/latest_screen.csv)
 - [`output_sample/screening_model_metrics.csv`](./output_sample/screening_model_metrics.csv)
 - [`output_sample/screening_model_coefficients.csv`](./output_sample/screening_model_coefficients.csv)
+- [`output_sample/top_quantamental_ideas.md`](./output_sample/top_quantamental_ideas.md)
 
 ## Tools Used
 
@@ -137,14 +148,20 @@ Sample outputs:
 - `yfinance`
 - `scikit-learn`
 
-## Why It Matters for Finance
+## Why This Workflow Matters
 
-- Combines a live screen and a research backtest in one coherent project
-- Produces the metrics recruiters expect to see: Sharpe, drawdown, turnover, IC, factor exposures, and ML holdout metrics
-- Reads like a practical quant research workflow rather than a classroom assignment
+- Combines screening, backtesting, attribution, and idea writeups in one workflow
+- Produces the metrics used to evaluate cross-sectional research: Sharpe, drawdown, turnover, IC, factor exposures, and ML holdout metrics
+- Supports both a compact default universe and S&P 500 mode for broader systematic equity experiments
 
 ## How To Run
 
 ```bash
 python -m factor_risk_model --output factor_risk_model/output_sample
+```
+
+Broad-universe mode:
+
+```bash
+python -m factor_risk_model --backtest-universe sp500 --screening-universe sp500 --output factor_risk_model/output_sp500
 ```

@@ -1,25 +1,23 @@
-# Quant Finance Portfolio
+# Quant Finance Projects
 
-This repository is organized as a recruiter-facing quant portfolio. The portfolio entries live under [`projects/`](./projects/README.md), while the implementation directories remain at the repo root so the Python packages and CLI workflows stay stable.
+This repository contains three quantitative finance projects. The short project pages live under [`projects/`](./projects/README.md), while the implementation directories remain at the repo root so the Python packages and CLI workflows stay stable.
 
 ## Portfolio Snapshot
 
 | Project | Focus | Results Snapshot | Why It Matters |
 | --- | --- | --- | --- |
 | [`Crypto Volatility Risk Engine`](./projects/crypto-volatility-risk-engine/README.md) | GARCH volatility forecasting, walk-forward validation, VaR/CVaR, and volatility-targeted overlays | On data from April 9, 2024 to April 8, 2026, BTC GARCH RMSE was `1.863` vs `2.172` for a random-walk baseline and ETH GARCH RMSE was `3.060` vs `3.673` | Shows time-series modeling, market risk analytics, and research code that connects forecasts to position sizing |
-| [`Equity Factor Screening Pipeline`](./projects/equity-factor-screening-pipeline/README.md) | Value-momentum-quality ranking, scikit-learn return classification, and long-short factor research | The long-short strategy delivered `67.9%` total return with `0.62` Sharpe from January 3, 2020 to April 7, 2026; the live screener classifier posted `54.9%` holdout accuracy and `0.537` ROC AUC from November 4, 2024 to February 9, 2026 | Shows cross-sectional research, factor construction, portfolio diagnostics, and ML-assisted ranking |
+| [`Quantamental Equity Research Platform`](./projects/equity-factor-screening-pipeline/README.md) | Value-momentum-quality ranking, scikit-learn return classification, quantamental idea generation, and long-short factor research | The long-short strategy delivered `67.9%` total return with `0.62` Sharpe from January 3, 2020 to April 7, 2026; the live screener classifier posted `54.9%` holdout accuracy and `0.537` ROC AUC from November 4, 2024 to February 9, 2026 | Shows cross-sectional research, factor construction, valuation-aware screening, and ML-assisted ranking |
 | [`Options Pricing Toolkit`](./projects/options-pricing-toolkit/README.md) | Black-Scholes, Greeks, implied vol inversion, Monte Carlo, and American option trees | For an ATM 1Y call with `S=K=100`, `r=3%`, `sigma=20%`, Black-Scholes priced at `9.4134`, Monte Carlo estimated `9.4158 +/- 0.1241`, and implied vol recovered `20.00%` | Shows derivatives math, calibration, and numerical methods |
 
 ## Repository Layout
 
 | Path | Purpose |
 | --- | --- |
-| [`projects/`](./projects/README.md) | Recruiter-facing portfolio entries |
+| [`projects/`](./projects/README.md) | Short project pages with methods, results, and run instructions |
 | `crypto_volatility/` | Crypto forecasting package, tests, notebooks, and sample outputs |
 | `factor_risk_model/` | Equity factor backtesting and screening package, tests, and outputs |
 | `options_pricing/` | Derivatives pricing toolkit and validation tests |
-| `docs/repository_audit.md` | Project audit and upgrade rationale |
-| `docs/resume_bullets.md` | Resume-ready bullets for quant, data, and SWE roles |
 | `streamlit_app.py` | Interactive dashboard for the crypto project |
 
 ## Quickstart
@@ -32,7 +30,7 @@ source .venv/bin/activate
 pip install -r requirements.txt -r requirements-ci.txt
 ```
 
-Run the portfolio projects:
+Run the projects:
 
 ```bash
 # Crypto volatility dashboard
@@ -58,5 +56,5 @@ python -m pytest -q
 
 - The crypto dashboard is live at [quant-finance.streamlit.app](https://quant-finance.streamlit.app)
 - Sample research artifacts are committed under `crypto_volatility/output_sample/`, `factor_risk_model/output_sample/`, and `options_pricing/output_sample.txt`
-- Exact dates are used throughout the portfolio so the claims are auditable
-- Extra project ideas that would extend the portfolio are listed in [`projects/next-project-ideas.md`](./projects/next-project-ideas.md)
+- Exact dates are used throughout the repository so the claims are auditable
+- Additional project ideas are listed in [`projects/next-project-ideas.md`](./projects/next-project-ideas.md)
