@@ -10,9 +10,14 @@ from typing import Dict, Optional
 import pandas as pd
 
 from factor_risk_model.src.backtesting import FactorBacktestResult, run_factor_backtest
-from factor_risk_model.src.data_collector import DEFAULT_UNIVERSE, StockDataCollector
+from factor_risk_model.src.data_collector import (
+    DEFAULT_UNIVERSE,
+    SCREENING_UNIVERSE,
+    StockDataCollector,
+)
 from factor_risk_model.src.factor_construction import FactorSet, build_factor_signals
 from factor_risk_model.src.factor_regression import FactorRegression
+from factor_risk_model.src.screening import ScreeningResult, run_equity_screening
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +32,7 @@ class FactorResearchResult:
     backtest: Optional[FactorBacktestResult] = None
     exposures: pd.Series = field(default_factory=pd.Series)
     exposure_summary: Dict = field(default_factory=dict)
+    screening: Optional[ScreeningResult] = None
 
 
 def run_factor_research(
@@ -37,6 +43,7 @@ def run_factor_research(
     rebalance_frequency: int = 63,
     selection_quantile: float = 0.2,
     transaction_cost_bps: float = 10.0,
+    screening_symbols=None,
 ) -> FactorResearchResult:
     """Execute the full factor research workflow."""
 
@@ -65,6 +72,18 @@ def run_factor_research(
     regression = FactorRegression(method="ols", scale_factors=False)
     regression.fit(backtest.portfolio_returns, factor_frame)
 
+    screening_symbols = screening_symbols or SCREENING_UNIVERSE
+    screening_collector = StockDataCollector(
+        symbols=screening_symbols,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    screening_prices = screening_collector.fetch_price_data()
+    screening_fundamentals = screening_collector.fetch_fundamental_snapshot(
+        list(screening_prices.columns)
+    )
+    screening = run_equity_screening(screening_prices, screening_fundamentals)
+
     result = FactorResearchResult(
         prices=prices,
         returns=returns,
@@ -72,6 +91,7 @@ def run_factor_research(
         backtest=backtest,
         exposures=regression.exposures,
         exposure_summary=regression.get_model_summary(),
+        screening=screening,
     )
     _save_outputs(result, output_dir)
     return result
@@ -100,6 +120,19 @@ def _save_outputs(result: FactorResearchResult, output_dir: str) -> None:
         os.path.join(output_dir, "summary.csv"),
         index=False,
     )
+    result.screening.latest_screen.to_csv(os.path.join(output_dir, "latest_screen.csv"))
+    pd.DataFrame([result.screening.model_metrics]).to_csv(
+        os.path.join(output_dir, "screening_model_metrics.csv"),
+        index=False,
+    )
+    result.screening.model_coefficients.to_csv(
+        os.path.join(output_dir, "screening_model_coefficients.csv"),
+        header=["coefficient"],
+    )
+    result.screening.holdout_predictions.to_csv(
+        os.path.join(output_dir, "screening_holdout_predictions.csv"),
+        index=False,
+    )
 
 
 def generate_report(result: FactorResearchResult) -> str:
@@ -126,5 +159,28 @@ def generate_report(result: FactorResearchResult) -> str:
 
     for factor_name, beta in result.exposures.items():
         lines.append(f"  {factor_name:<20} {beta: .3f}")
+
+    if result.screening is not None:
+        lines.extend(
+            [
+                "",
+                "Latest factor screen:",
+            ]
+        )
+        for symbol, row in result.screening.latest_screen.head(5).iterrows():
+            lines.append(
+                f"  {symbol:<6} rank={int(row['screen_rank'])}  "
+                f"score={row['screen_score']:.2f}  "
+                f"prob={row['predicted_outperformance_probability']:.2%}"
+            )
+        lines.extend(
+            [
+                "",
+                "Classifier holdout metrics:",
+                f"  Accuracy        : {result.screening.model_metrics['holdout_accuracy']:.2%}",
+                f"  ROC AUC         : {result.screening.model_metrics['holdout_roc_auc']:.3f}",
+                f"  Holdout window  : {result.screening.model_metrics['holdout_start']} to {result.screening.model_metrics['holdout_end']}",
+            ]
+        )
 
     return "\n".join(lines)

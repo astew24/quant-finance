@@ -5,6 +5,7 @@
 | Path | Type | Purpose | Portfolio Assessment |
 | --- | --- | --- | --- |
 | `README.md` | Documentation | Top-level portfolio overview | Rewritten to frame the repository as a targeted quant portfolio |
+| `projects/` | Documentation | Recruiter-facing project index and polished project pages | Added to make the repo browse like a real portfolio |
 | `streamlit_app.py` | App | Interactive dashboard for crypto volatility research | Relevant and useful as a demo surface |
 | `crypto_volatility/` | Project | Crypto volatility forecasting, risk metrics, and dashboard | Strong project, upgraded with strategy analytics and richer outputs |
 | `factor_risk_model/` | Project | Originally a light factor-regression utility project | Weak before; rebuilt into a cross-sectional factor research engine |
@@ -49,6 +50,8 @@ After:
 - Added cross-sectional signal construction
 - Added long-short backtester with quarterly rebalancing
 - Added information coefficient tracking, turnover, and factor attribution
+- Added a live value-momentum-quality screener
+- Added a scikit-learn classifier for next-month outperformance prediction
 - Added CLI pipeline and committed sample outputs
 
 ### `options_pricing`
@@ -68,7 +71,7 @@ Implemented:
 The repository now has coverage across:
 
 1. Time-series modeling and market risk
-2. Cross-sectional alpha research and portfolio construction
+2. Cross-sectional alpha research, factor screening, and portfolio construction
 3. Derivatives pricing and calibration
 
 That mix is materially stronger for quant finance, data science, and software engineering recruiting than a single-project repository.

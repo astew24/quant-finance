@@ -1,29 +1,26 @@
 # Quant Finance Portfolio
 
-This repository is structured as a targeted portfolio for quant finance, data science, and software engineering roles. It now covers three complementary areas:
-
-1. Time-series volatility forecasting and risk engineering in crypto markets
-2. Cross-sectional equity factor research with backtesting and attribution
-3. Derivatives pricing with analytical and numerical methods
+This repository is organized as a recruiter-facing quant portfolio. The portfolio entries live under [`projects/`](./projects/README.md), while the implementation directories remain at the repo root so the Python packages and CLI workflows stay stable.
 
 ## Portfolio Snapshot
 
 | Project | Focus | Results Snapshot | Why It Matters |
 | --- | --- | --- | --- |
-| [`crypto_volatility`](./crypto_volatility/README.md) | GARCH volatility forecasting, walk-forward backtesting, VaR/CVaR, volatility-targeted overlays | On trailing data from April 9, 2024 to April 8, 2026, BTC GARCH RMSE was `1.863` vs `2.172` for a random-walk baseline and ETH GARCH RMSE was `3.060` vs `3.673` | Shows time-series modeling, risk analytics, backtesting discipline, and deployable research code |
-| [`factor_risk_model`](./factor_risk_model/README.md) | Cross-sectional factor signals, long-short portfolio construction, IC analysis, factor attribution | From January 3, 2020 to April 7, 2026 the strategy delivered `67.9%` total return, `10.9%` annualized return, `0.62` Sharpe, and `0.129` mean IC with near-zero market beta | Shows portfolio construction, alpha research, and explainable factor exposure analysis |
-| [`options_pricing`](./options_pricing/README.md) | Black-Scholes, Greeks, implied vol inversion, Monte Carlo, American option tree | For an ATM 1Y call with `S=K=100`, `r=3%`, `sigma=20%`, Black-Scholes priced at `9.4134`, Monte Carlo estimated `9.4158 +/- 0.1241`, and implied vol recovered `20.00%` | Shows derivatives math, calibration, and numerical methods |
+| [`Crypto Volatility Risk Engine`](./projects/crypto-volatility-risk-engine/README.md) | GARCH volatility forecasting, walk-forward validation, VaR/CVaR, and volatility-targeted overlays | On data from April 9, 2024 to April 8, 2026, BTC GARCH RMSE was `1.863` vs `2.172` for a random-walk baseline and ETH GARCH RMSE was `3.060` vs `3.673` | Shows time-series modeling, market risk analytics, and research code that connects forecasts to position sizing |
+| [`Equity Factor Screening Pipeline`](./projects/equity-factor-screening-pipeline/README.md) | Value-momentum-quality ranking, scikit-learn return classification, and long-short factor research | The long-short strategy delivered `67.9%` total return with `0.62` Sharpe from January 3, 2020 to April 7, 2026; the live screener classifier posted `54.9%` holdout accuracy and `0.537` ROC AUC from November 4, 2024 to February 9, 2026 | Shows cross-sectional research, factor construction, portfolio diagnostics, and ML-assisted ranking |
+| [`Options Pricing Toolkit`](./projects/options-pricing-toolkit/README.md) | Black-Scholes, Greeks, implied vol inversion, Monte Carlo, and American option trees | For an ATM 1Y call with `S=K=100`, `r=3%`, `sigma=20%`, Black-Scholes priced at `9.4134`, Monte Carlo estimated `9.4158 +/- 0.1241`, and implied vol recovered `20.00%` | Shows derivatives math, calibration, and numerical methods |
 
-## Repository Guide
+## Repository Layout
 
 | Path | Purpose |
 | --- | --- |
-| `streamlit_app.py` | Interactive dashboard for the crypto volatility project |
-| `crypto_volatility/` | Forecasting pipeline, risk analytics, tests, notebooks, and sample outputs |
-| `factor_risk_model/` | Cross-sectional factor research engine, outputs, and tests |
+| [`projects/`](./projects/README.md) | Recruiter-facing portfolio entries |
+| `crypto_volatility/` | Crypto forecasting package, tests, notebooks, and sample outputs |
+| `factor_risk_model/` | Equity factor backtesting and screening package, tests, and outputs |
 | `options_pricing/` | Derivatives pricing toolkit and validation tests |
-| `docs/repository_audit.md` | Portfolio audit of the repository and upgrade decisions |
-| `docs/resume_bullets.md` | Resume-ready bullets tailored for quant, data, and SWE roles |
+| `docs/repository_audit.md` | Project audit and upgrade rationale |
+| `docs/resume_bullets.md` | Resume-ready bullets for quant, data, and SWE roles |
+| `streamlit_app.py` | Interactive dashboard for the crypto project |
 
 ## Quickstart
 
@@ -35,42 +32,31 @@ source .venv/bin/activate
 pip install -r requirements.txt -r requirements-ci.txt
 ```
 
-Run the projects:
+Run the portfolio projects:
 
 ```bash
-# Streamlit demo
+# Crypto volatility dashboard
 streamlit run streamlit_app.py
 
 # Crypto volatility research pipeline
 python -m crypto_volatility --symbols BTC-USD ETH-USD --days 730 --horizon 10 --output crypto_volatility/output_sample
 
-# Cross-sectional equity factor research
+# Equity factor screening + research pipeline
 python -m factor_risk_model --output factor_risk_model/output_sample
 
 # Options pricing toolkit
 python -m options_pricing
 ```
 
-Run the full test suite:
+Run all tests:
 
 ```bash
 python -m pytest -q
 ```
 
-## Project Notes
+## Notes
 
-- The crypto project includes a live Streamlit app: [quant-finance.streamlit.app](https://quant-finance.streamlit.app)
-- Sample research artifacts are committed under `crypto_volatility/output_sample/` and `factor_risk_model/output_sample/`
-- Results in the READMEs use exact historical windows rather than vague phrases like "recently"
-
-## Resume Support
-
-The repository now includes a dedicated resume bullets file:
-
-- [`docs/resume_bullets.md`](./docs/resume_bullets.md)
-
-It contains role-ready bullets for:
-
-- Quant research / quant developer
-- Data scientist / ML engineer
-- Software engineer
+- The crypto dashboard is live at [quant-finance.streamlit.app](https://quant-finance.streamlit.app)
+- Sample research artifacts are committed under `crypto_volatility/output_sample/`, `factor_risk_model/output_sample/`, and `options_pricing/output_sample.txt`
+- Exact dates are used throughout the portfolio so the claims are auditable
+- Extra project ideas that would extend the portfolio are listed in [`projects/next-project-ideas.md`](./projects/next-project-ideas.md)

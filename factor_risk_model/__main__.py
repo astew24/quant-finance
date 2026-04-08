@@ -35,6 +35,11 @@ def main(argv=None) -> None:
         default=10.0,
         help="One-way transaction cost in basis points",
     )
+    parser.add_argument(
+        "--screening-symbols",
+        nargs="+",
+        help="Override the default screening universe",
+    )
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
     args = parser.parse_args(argv)
 
@@ -52,6 +57,7 @@ def main(argv=None) -> None:
         rebalance_frequency=args.rebalance_frequency,
         selection_quantile=args.selection_quantile,
         transaction_cost_bps=args.transaction_cost_bps,
+        screening_symbols=args.screening_symbols,
     )
     print(generate_report(result))
 

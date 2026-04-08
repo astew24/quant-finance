@@ -1,4 +1,4 @@
-"""Market data utilities for the factor research pipeline."""
+"""Market data and fundamentals utilities for factor research."""
 
 from __future__ import annotations
 
@@ -25,6 +25,52 @@ DEFAULT_UNIVERSE = [
     "CVX",
     "UNH",
     "HD",
+]
+
+SCREENING_UNIVERSE = [
+    "AAPL",
+    "MSFT",
+    "NVDA",
+    "AMZN",
+    "GOOGL",
+    "META",
+    "TSLA",
+    "NFLX",
+    "JPM",
+    "GS",
+    "MS",
+    "BAC",
+    "XOM",
+    "CVX",
+    "COP",
+    "UNH",
+    "JNJ",
+    "LLY",
+    "HD",
+    "COST",
+    "WMT",
+    "CAT",
+    "DE",
+    "GE",
+]
+
+FUNDAMENTAL_NUMERIC_FIELDS = [
+    "marketCap",
+    "trailingPE",
+    "forwardPE",
+    "priceToBook",
+    "enterpriseToEbitda",
+    "returnOnEquity",
+    "returnOnAssets",
+    "profitMargins",
+    "operatingMargins",
+    "currentRatio",
+    "debtToEquity",
+]
+
+FUNDAMENTAL_TEXT_FIELDS = [
+    "shortName",
+    "sector",
 ]
 
 
@@ -85,3 +131,27 @@ class StockDataCollector:
         if prices.empty:
             raise ValueError("prices must be non-empty")
         return prices.pct_change().dropna(how="all")
+
+    @staticmethod
+    def fetch_fundamental_snapshot(symbols: List[str]) -> pd.DataFrame:
+        """Fetch a current fundamental snapshot for the screener."""
+
+        rows = []
+        for symbol in symbols:
+            try:
+                info = yf.Ticker(symbol).get_info()
+            except Exception as exc:
+                logger.warning("Failed to fetch fundamentals for %s: %s", symbol, exc)
+                info = {}
+
+            row = {"symbol": symbol}
+            for field in FUNDAMENTAL_TEXT_FIELDS:
+                row[field] = info.get(field)
+            for field in FUNDAMENTAL_NUMERIC_FIELDS:
+                row[field] = info.get(field)
+            rows.append(row)
+
+        snapshot = pd.DataFrame(rows).set_index("symbol")
+        for field in FUNDAMENTAL_NUMERIC_FIELDS:
+            snapshot[field] = pd.to_numeric(snapshot[field], errors="coerce")
+        return snapshot.sort_index()

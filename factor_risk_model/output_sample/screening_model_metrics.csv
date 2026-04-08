@@ -1,0 +1,2 @@
+train_rows,test_rows,holdout_accuracy,holdout_precision,holdout_recall,holdout_roc_auc,holdout_brier_score,holdout_start,holdout_end
+1104,384,0.5494791666666666,0.5131578947368421,0.4406779661016949,0.5368869237697536,0.24712788032364266,2024-11-04,2026-02-09

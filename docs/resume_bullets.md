@@ -7,12 +7,12 @@
 - Implemented a volatility-targeted overlay with capped leverage and turnover costs, cutting realized annualized volatility from `45.8%` to `36.1%` on BTC and from `74.7%` to `36.1%` on ETH over the evaluation window.
 - Productionized the project with CLI entrypoints, committed sample outputs, unit tests, and a Streamlit front end that turns raw forecasts into desk-style risk views.
 
-## Cross-Sectional Equity Factor Research
+## Equity Factor Screening Pipeline and Alpha Research
 
-- Rebuilt a lightweight factor-regression repo into a cross-sectional equity research engine that constructs momentum, short-term reversal, and low-volatility signals across a liquid 12-name U.S. equity universe.
-- Designed a market-neutral long-short strategy with quarterly rebalancing and `10 bps` transaction costs; generated `67.9%` total return, `10.9%` annualized return, and `0.62` Sharpe from January 3, 2020 to April 7, 2026.
-- Added portfolio diagnostics used in quant workflows, including turnover, max drawdown, mean information coefficient (`0.129`), and factor attribution with near-zero market beta (`-0.041`).
-- Exposed the research stack through a clean CLI pipeline that writes prices, returns, factor scores, weights, factor returns, and exposure summaries for reproducible analysis.
+- Built an automated equity factor screener across a 24-name large-cap universe, ranking securities on value, momentum, and quality using Yahoo Finance fundamentals and cross-sectional price signals.
+- Applied a scikit-learn logistic classifier to predict next-month cross-sectional outperformance, reaching `54.9%` holdout accuracy and `0.537` ROC AUC over the November 4, 2024 to February 9, 2026 holdout window.
+- Designed a linked market-neutral factor backtest with quarterly rebalancing and `10 bps` transaction costs; generated `67.9%` total return, `10.9%` annualized return, and `0.62` Sharpe from January 3, 2020 to April 7, 2026.
+- Added portfolio diagnostics used in quant workflows, including turnover, max drawdown, information coefficient (`0.129`), and factor attribution with near-zero market beta (`-0.041`).
 
 ## Options Pricing Toolkit
 
