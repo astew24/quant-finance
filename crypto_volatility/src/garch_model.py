@@ -121,6 +121,7 @@ class RollingGARCH:
                 g.fit(train)
                 fc = g.forecast(self.forecast_horizon)
                 forecasts.extend(fc.values)
+                # realized vol proxy: std of test window, annualized
                 actual_vol = test.std() * np.sqrt(252)
                 actuals.extend([actual_vol] * self.forecast_horizon)
                 dates.extend(test.index)
