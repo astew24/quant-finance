@@ -30,3 +30,6 @@ jobs:
 
       - name: Run factor_risk_model tests
         run: python -m pytest factor_risk_model/tests/ -v --tb=short
+
+      - name: Run options_pricing tests
+        run: python -m pytest options_pricing/tests/ -v --tb=short
