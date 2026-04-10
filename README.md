@@ -1,5 +1,9 @@
 # Quant Finance Projects
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit-FF4B4B?logo=streamlit&logoColor=white)](https://quant-finance.streamlit.app)
+
+This repository showcases a small quant portfolio across three distinct workflows: time-series volatility modeling for crypto markets, cross-sectional factor research for equities, and derivatives pricing with both analytical and numerical methods. Together they demonstrate end-to-end quantitative engineering, from raw data and model design through validation, risk measurement, committed sample artifacts, and a stateless Streamlit showcase that an employer can review immediately.
+
 This repository contains three quantitative finance projects. The short project pages live under [`projects/`](./projects/README.md), while the implementation directories remain at the repo root so the Python packages and CLI workflows stay stable.
 
 ## Portfolio Snapshot
@@ -18,7 +22,7 @@ This repository contains three quantitative finance projects. The short project 
 | `crypto_volatility/` | Crypto forecasting package, tests, notebooks, and sample outputs |
 | `factor_risk_model/` | Equity factor backtesting and screening package, tests, and outputs |
 | `options_pricing/` | Derivatives pricing toolkit and validation tests |
-| `streamlit_app.py` | Interactive dashboard for the crypto project |
+| `streamlit_app.py` | Interactive portfolio dashboard spanning all three projects |
 
 ## Quickstart
 
@@ -56,7 +60,7 @@ python -m pytest -q
 
 ## Notes
 
-- The crypto dashboard is live at [quant-finance.streamlit.app](https://quant-finance.streamlit.app)
+- The live portfolio dashboard is at [quant-finance.streamlit.app](https://quant-finance.streamlit.app)
 - Sample research artifacts are committed under `crypto_volatility/output_sample/`, `factor_risk_model/output_sample/`, and `options_pricing/output_sample.txt`
 - Exact dates are used throughout the repository so the claims are auditable
 - Additional project ideas are listed in [`projects/next-project-ideas.md`](./projects/next-project-ideas.md)
