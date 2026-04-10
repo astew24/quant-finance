@@ -17,6 +17,7 @@ from crypto_volatility.src.garch_model import GARCHModel, compare_garch_models
 from crypto_volatility.src.metrics import calculate_rmse
 from crypto_volatility.src.risk_utils import calculate_var, calculate_cvar, detect_regimes
 from crypto_volatility.src.backtesting import run_full_backtest
+from crypto_volatility.src.demo_data import available_sample_symbols, load_sample_market_data, sample_data_exists
 
 # ---------------------------------------------------------------------------
 # Config
@@ -47,6 +48,9 @@ CHART_LAYOUT = dict(
     font=dict(family="Inter, system-ui, sans-serif", size=12),
     margin=dict(l=0, r=0, t=30, b=0),
 )
+
+LIVE_AVAILABLE = ["BTC-USD", "ETH-USD", "SOL-USD", "AVAX-USD", "DOGE-USD"]
+SAMPLE_AVAILABLE = available_sample_symbols()
 
 # ---------------------------------------------------------------------------
 # Custom CSS
@@ -167,10 +171,18 @@ footer {visibility: hidden;}
 # ---------------------------------------------------------------------------
 st.sidebar.markdown("## Settings")
 
-AVAILABLE = ["BTC-USD", "ETH-USD", "SOL-USD", "AVAX-USD", "DOGE-USD"]
-symbols = st.sidebar.multiselect("Assets", AVAILABLE, default=["BTC-USD", "ETH-USD"])
+data_mode = st.sidebar.radio(
+    "Data source",
+    ["Auto", "Live", "Demo sample"],
+    index=0,
+    help="Auto tries live Yahoo Finance first and falls back to committed sample data when available.",
+)
+
+asset_choices = SAMPLE_AVAILABLE if data_mode == "Demo sample" and SAMPLE_AVAILABLE else LIVE_AVAILABLE
+default_symbols = [sym for sym in ["BTC-USD", "ETH-USD"] if sym in asset_choices] or asset_choices[:1]
+symbols = st.sidebar.multiselect("Assets", asset_choices, default=default_symbols)
 if not symbols:
-    symbols = ["BTC-USD"]
+    symbols = default_symbols[:1]
 
 days_back = st.sidebar.slider("History (days)", 365, 1825, 730, step=30)
 vol_window = st.sidebar.slider("Volatility window", 7, 90, 30)
@@ -180,22 +192,60 @@ alert_mult = st.sidebar.slider("Alert threshold (x avg vol)", 1.0, 3.0, 1.5, 0.1
 run = st.sidebar.button("Run Analysis", type="primary", use_container_width=True)
 
 st.sidebar.markdown("---")
-st.sidebar.caption(
-    "Fetches live data from Yahoo Finance. "
-    "No API key required."
-)
+if data_mode == "Demo sample":
+    if SAMPLE_AVAILABLE:
+        st.sidebar.caption(
+            "Uses committed sample outputs for an offline, presentation-safe run. "
+            "BTC and ETH demo data are bundled in the repo."
+        )
+    else:
+        st.sidebar.error("No committed sample data was found in the repository.")
+elif data_mode == "Live":
+    st.sidebar.caption(
+        "Fetches live data from Yahoo Finance. "
+        "No API key required."
+    )
+else:
+    st.sidebar.caption(
+        "Tries live Yahoo Finance first, then falls back to committed sample data when available."
+    )
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 @st.cache_data(ttl=300, show_spinner=False)
-def fetch(sym, days):
-    c = CryptoDataCollector(symbols=[sym])
+def fetch(sym, days, mode):
+    def load_sample():
+        sample = load_sample_market_data(sym, days=days)
+        return sample, sample["returns"].dropna()
+
+    if mode == "Demo sample":
+        if not sample_data_exists(sym):
+            return pd.DataFrame(), pd.Series(dtype=float), "Unavailable", f"No committed sample data exists for {sym}."
+        df, returns = load_sample()
+        return df, returns, "Demo sample", "Loaded committed sample data from crypto_volatility/output_sample."
+
+    collector = CryptoDataCollector(symbols=[sym])
     start = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
-    df = c.fetch_ohlcv(sym, start=start)
-    if df.empty:
-        return df, pd.Series(dtype=float)
-    return df, c.calculate_returns(df).dropna()
+
+    try:
+        df = collector.fetch_ohlcv(sym, start=start)
+        if not df.empty:
+            return df, collector.calculate_returns(df).dropna(), "Live Yahoo Finance", ""
+        live_error = "Yahoo Finance returned no rows."
+    except Exception as exc:
+        live_error = str(exc)
+
+    if mode == "Auto" and sample_data_exists(sym):
+        df, returns = load_sample()
+        return (
+            df,
+            returns,
+            "Demo sample fallback",
+            f"Live fetch failed for {sym}; using committed sample data instead ({live_error}).",
+        )
+
+    return pd.DataFrame(), pd.Series(dtype=float), "Unavailable", f"Unable to load {sym}: {live_error}"
 
 
 def chart(height=320, **kw):
@@ -248,26 +298,47 @@ if not run:
 
     st.markdown("---")
     st.info("Select assets in the sidebar and click **Run Analysis** to start the pipeline.")
-    st.caption("Built with Python, arch, yfinance, scikit-learn, and Streamlit.")
+    st.caption(
+        "Built with Python, arch, yfinance, scikit-learn, and Streamlit. "
+        "Use `Demo sample` in the sidebar for an offline-safe walkthrough."
+    )
     st.stop()
 
 # Fetch data for all symbols
 all_data = {}
 total_rows = 0
+load_messages = []
 progress = st.progress(0, text="Fetching data...")
 for i, sym in enumerate(symbols):
-    df, rets = fetch(sym, days_back)
+    df, rets, source, message = fetch(sym, days_back, data_mode)
     if not df.empty:
-        all_data[sym] = {"df": df, "returns": rets}
+        all_data[sym] = {"df": df, "returns": rets, "source": source}
         total_rows += len(df)
+    if message:
+        load_messages.append(message)
     progress.progress((i + 1) / len(symbols), text=f"Loaded {sym}")
 progress.empty()
 
 if not all_data:
-    st.error("Could not fetch data. Check your connection.")
+    error_message = "Could not load any data."
+    if load_messages:
+        error_message = f"{error_message} {' '.join(load_messages)}"
+    st.error(error_message)
     st.stop()
 
 total_pts = sum(len(d["df"]) * len(d["df"].columns) for d in all_data.values())
+date_min = min(d["df"].index.min() for d in all_data.values())
+date_max = max(d["df"].index.max() for d in all_data.values())
+sample_symbols = [sym for sym, sd in all_data.items() if sd["source"] != "Live Yahoo Finance"]
+
+if sample_symbols:
+    joined = ", ".join(sample_symbols)
+    st.warning(
+        f"Using committed sample data for {joined}. "
+        "Sample-backed price charts are normalized to a base value of 100 for offline demos."
+    )
+elif load_messages:
+    st.info(" ".join(load_messages))
 
 # ===== TABS =====
 tab_overview, tab_vol, tab_risk, tab_backtest, tab_method = st.tabs([
@@ -287,16 +358,20 @@ with tab_overview:
     k1.metric("Assets", len(all_data))
     k2.metric("Daily Observations", f"{total_rows:,}")
     k3.metric("Data Points", f"{total_pts:,}")
-    k4.metric("Date Range", f"{days_back} days")
+    k4.metric("Date Range", f"{date_min:%Y-%m-%d} to {date_max:%Y-%m-%d}")
 
     # Price charts
     for sym, sd in all_data.items():
         df = sd["df"]
+        source = sd["source"]
         col = "Close" if "Close" in df.columns else "close"
         prices = df[col]
         rets = sd["returns"]
+        price_axis = "USD" if source == "Live Yahoo Finance" else "Normalized Index (base = 100)"
+        price_title = f"{sym} Price" if source == "Live Yahoo Finance" else f"{sym} Demo Price Path"
 
         st.subheader(sym)
+        st.caption(f"Source: {source}")
         pc, rc = st.columns([3, 2])
 
         with pc:
@@ -306,7 +381,7 @@ with tab_overview:
                 mode="lines", line=dict(color=COLORS["primary"], width=1.5),
                 fill="tozeroy", fillcolor="rgba(99, 102, 241, 0.08)",
             ))
-            fig.update_layout(**chart(yaxis_title="USD", title=f"{sym} Price"))
+            fig.update_layout(**chart(yaxis_title=price_axis, title=price_title))
             st.plotly_chart(fig, use_container_width=True)
 
         with rc:
@@ -716,6 +791,10 @@ with tab_method:
     Daily OHLCV data sourced from Yahoo Finance. Log returns are computed as
     r_t = ln(P_t / P_{t-1}). Annualised volatility uses a sqrt(365) scaling factor
     since crypto markets trade 24/7/365, unlike equities (sqrt(252)).
+
+    For demos, the app can also load committed sample outputs from `crypto_volatility/output_sample`.
+    In that mode, the price chart is reconstructed as a normalized index so the dashboard remains
+    usable without a live network dependency.
 
     ### GARCH(1,1) Model
 

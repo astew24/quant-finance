@@ -72,3 +72,5 @@ For the interactive interface:
 ```bash
 streamlit run streamlit_app.py
 ```
+
+For a presentation-safe walkthrough, switch the sidebar `Data source` to `Demo sample`. The dashboard will load the committed BTC and ETH sample outputs from [`output_sample/`](./output_sample/) so it still works without a live Yahoo Finance connection.

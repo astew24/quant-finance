@@ -46,6 +46,8 @@ python -m factor_risk_model --output factor_risk_model/output_sample
 python -m options_pricing
 ```
 
+For an offline-safe demo, open the dashboard and set the sidebar `Data source` control to `Demo sample`. That uses the committed BTC and ETH sample artifacts in `crypto_volatility/output_sample/` instead of relying on a live Yahoo Finance connection.
+
 Run all tests:
 
 ```bash
