@@ -1,16 +1,6 @@
 name: Deploy Portfolio Site
 
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - ".github/workflows/pages.yml"
-      - "docs/**"
-      - "scripts/build_portfolio_site_data.py"
-      - "crypto_volatility/output_sample/**"
-      - "factor_risk_model/output_sample/**"
-      - "options_pricing/output_sample.txt"
-      - "README.md"
   workflow_dispatch:
 
 permissions:

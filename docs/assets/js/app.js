@@ -843,8 +843,10 @@ function rerenderAll() {
 }
 
 async function init() {
-  const response = await fetch("./assets/data/portfolio.json");
-  const data = await response.json();
+  const inlineData = document.getElementById("portfolio-data");
+  const data = inlineData
+    ? JSON.parse(inlineData.textContent)
+    : await fetch("./assets/data/portfolio.json").then((response) => response.json());
   state.data = data;
   state.options = { ...data.options.default_scenario };
 

@@ -1,0 +1,5624 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quant Finance Portfolio</title>
+    <meta
+      name="description"
+      content="A live quant finance portfolio covering crypto volatility modeling, equity factor research, and options pricing."
+    >
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    >
+    <style>
+:root {
+  --paper: #f4ede1;
+  --paper-strong: #fbf7ef;
+  --ink: #0f1a24;
+  --ink-soft: #243240;
+  --line: rgba(15, 26, 36, 0.14);
+  --line-strong: rgba(15, 26, 36, 0.3);
+  --teal: #0c6a66;
+  --teal-soft: rgba(12, 106, 102, 0.12);
+  --copper: #b5662a;
+  --copper-soft: rgba(181, 102, 42, 0.12);
+  --rose: #9b3f34;
+  --green: #176548;
+  --shadow: 0 24px 48px rgba(15, 26, 36, 0.08);
+  --radius: 22px;
+  --radius-sm: 16px;
+  --content-width: 1240px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at top left, rgba(12, 106, 102, 0.14), transparent 32%),
+    radial-gradient(circle at top right, rgba(181, 102, 42, 0.14), transparent 28%),
+    linear-gradient(180deg, #efe6d8 0%, var(--paper) 32%, #f8f4ec 100%);
+  color: var(--ink);
+  font-family: "Source Serif 4", Georgia, serif;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(15, 26, 36, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 26, 36, 0.03) 1px, transparent 1px);
+  background-size: 32px 32px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.22), transparent 88%);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.page-shell {
+  position: relative;
+  width: min(calc(100% - 32px), var(--content-width));
+  margin: 0 auto;
+  padding: 18px 0 64px;
+}
+
+.topbar {
+  position: sticky;
+  top: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 28px;
+  padding: 14px 18px;
+  border: 1px solid rgba(251, 247, 239, 0.5);
+  border-radius: 999px;
+  background: rgba(15, 26, 36, 0.86);
+  color: #f8f5ef;
+  box-shadow: 0 14px 34px rgba(15, 26, 36, 0.18);
+  backdrop-filter: blur(16px);
+}
+
+.brand,
+.nav,
+.button,
+.eyebrow,
+.panel-label,
+.section-index,
+.card-kicker,
+.review-label,
+.note-chip,
+.section-meta,
+.metric-label,
+.metric-detail,
+.signal-card,
+.pill,
+.slider-meta,
+.noscript-banner {
+  font-family: "Space Grotesk", "Helvetica Neue", sans-serif;
+}
+
+.brand {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.nav {
+  display: flex;
+  gap: 18px;
+  color: rgba(248, 245, 239, 0.78);
+  font-size: 0.92rem;
+}
+
+.nav a:hover,
+.button:hover,
+.review-card:hover {
+  transition: 160ms ease;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: var(--ink);
+  color: #faf5ed;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.button--ghost {
+  border-color: var(--line);
+  background: transparent;
+  color: var(--ink);
+}
+
+.topbar .button--ghost {
+  border-color: rgba(248, 245, 239, 0.18);
+  color: #faf5ed;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.95fr);
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.hero-copy,
+.hero-panel,
+.card,
+.signal-card,
+.review-card {
+  border: 1px solid var(--line);
+  background: rgba(251, 247, 239, 0.72);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.hero-copy {
+  padding: 40px;
+  border-radius: calc(var(--radius) + 4px);
+}
+
+.hero-panel {
+  padding: 30px;
+  border-radius: calc(var(--radius) + 4px);
+  background:
+    linear-gradient(180deg, rgba(15, 26, 36, 0.96), rgba(27, 39, 51, 0.98)),
+    rgba(15, 26, 36, 0.94);
+  color: #f6efe3;
+}
+
+.eyebrow,
+.panel-label,
+.section-index,
+.card-kicker,
+.review-label {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.eyebrow,
+.section-index,
+.card-kicker,
+.review-label {
+  color: var(--copper);
+}
+
+.panel-label {
+  color: rgba(246, 239, 227, 0.64);
+}
+
+h1,
+h2,
+h3,
+strong {
+  margin: 0;
+  font-family: "Space Grotesk", "Helvetica Neue", sans-serif;
+}
+
+h1 {
+  max-width: 10ch;
+  font-size: clamp(3rem, 8vw, 5.3rem);
+  line-height: 0.92;
+  letter-spacing: -0.06em;
+}
+
+h2 {
+  max-width: 14ch;
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 0.98;
+  letter-spacing: -0.05em;
+}
+
+h3 {
+  font-size: 1.35rem;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.lede,
+.section-summary,
+.card-note,
+.review-card p,
+.signal-card p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 1.06rem;
+  line-height: 1.58;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 26px 0 22px;
+}
+
+.hero-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.note-chip {
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.metric-stack {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.metric-stack .hero-metric {
+  padding: 18px;
+  border: 1px solid rgba(246, 239, 227, 0.12);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.hero-metric-value {
+  margin: 6px 0;
+  font-family: "Space Grotesk", "Helvetica Neue", sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+}
+
+.hero-metric-label,
+.hero-metric-detail {
+  color: rgba(246, 239, 227, 0.78);
+}
+
+.hero-metric-label {
+  font-size: 0.84rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hero-metric-detail {
+  font-size: 0.92rem;
+}
+
+.signal-strip,
+.idea-grid,
+.review-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.signal-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 58px;
+}
+
+.signal-card {
+  padding: 20px 22px;
+  border-radius: var(--radius-sm);
+}
+
+.signal-card strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 1.18rem;
+}
+
+.signal-card small {
+  display: block;
+  margin-top: 12px;
+  color: var(--ink-soft);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.8rem;
+}
+
+.section {
+  margin-bottom: 66px;
+  padding-top: 10px;
+}
+
+.section-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 18px 24px;
+  align-items: end;
+  margin-bottom: 24px;
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.toggle-group,
+.pill-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.toggle-button,
+.pill {
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.toggle-button.is-active,
+.pill.is-active {
+  border-color: transparent;
+  background: var(--ink);
+  color: #f8f5ef;
+  box-shadow: 0 8px 18px rgba(15, 26, 36, 0.14);
+}
+
+.section-meta {
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.grid-two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.grid-two--bottom {
+  margin-top: 18px;
+  align-items: stretch;
+}
+
+.card {
+  padding: 24px;
+  border-radius: var(--radius);
+}
+
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.card-note {
+  max-width: 24ch;
+  font-size: 0.96rem;
+}
+
+.chart-card,
+.table-card,
+.controls-card,
+.metrics-card {
+  min-height: 100%;
+}
+
+.chart-host {
+  min-height: 314px;
+}
+
+.chart-host--compact {
+  min-height: 270px;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.metric-grid--wide {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 18px;
+}
+
+.metric-card {
+  padding: 16px 16px 14px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.metric-label {
+  margin-bottom: 6px;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.metric-value {
+  margin-bottom: 6px;
+  font-family: "Space Grotesk", "Helvetica Neue", sans-serif;
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+}
+
+.metric-detail {
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+th {
+  color: var(--ink-soft);
+  font-family: "Space Grotesk", "Helvetica Neue", sans-serif;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+td {
+  font-size: 0.98rem;
+}
+
+.idea-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 18px;
+}
+
+.idea-card {
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.46);
+}
+
+.idea-card h3 {
+  margin-bottom: 10px;
+}
+
+.idea-card p {
+  margin: 0 0 14px;
+  line-height: 1.56;
+  color: var(--ink-soft);
+}
+
+.idea-risk {
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.options-layout {
+  align-items: stretch;
+}
+
+.options-panels {
+  display: grid;
+  gap: 18px;
+}
+
+.slider-group {
+  display: grid;
+  gap: 18px;
+}
+
+.slider-row {
+  display: grid;
+  gap: 8px;
+}
+
+.slider-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+input[type="range"] {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--teal);
+}
+
+.review-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.review-card {
+  display: block;
+  padding: 22px;
+  border-radius: var(--radius);
+}
+
+.review-card strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 1.16rem;
+}
+
+.review-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--line-strong);
+}
+
+.noscript-banner {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  max-width: 360px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(15, 26, 36, 0.9);
+  color: #f8f5ef;
+  box-shadow: var(--shadow);
+}
+
+.chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.chart-grid-line {
+  stroke: rgba(15, 26, 36, 0.1);
+  stroke-width: 1;
+}
+
+.chart-axis-line {
+  stroke: rgba(15, 26, 36, 0.28);
+  stroke-width: 1;
+}
+
+.chart-label {
+  fill: rgba(36, 50, 64, 0.72);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+  color: var(--ink-soft);
+  font-family: "Space Grotesk", "Helvetica Neue", sans-serif;
+  font-size: 0.82rem;
+}
+
+.legend-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+@media (max-width: 1080px) {
+  .hero,
+  .section-head,
+  .review-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .review-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .signal-strip,
+  .idea-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .metric-grid--wide {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .page-shell {
+    width: min(calc(100% - 20px), var(--content-width));
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    justify-content: center;
+    border-radius: 26px;
+  }
+
+  .nav {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .hero-copy,
+  .hero-panel,
+  .card {
+    padding: 20px;
+  }
+
+  .grid-two,
+  .metric-grid,
+  .review-grid,
+  .metric-grid--wide {
+    grid-template-columns: 1fr;
+  }
+
+  .control-row,
+  .card-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .chart-host {
+    min-height: 260px;
+  }
+}
+
+</style>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="#top">AS / Quant Finance</a>
+        <nav class="nav">
+          <a href="#crypto">Crypto</a>
+          <a href="#factor">Factor</a>
+          <a href="#options">Options</a>
+          <a href="#review">Review</a>
+        </nav>
+        <a class="button button--ghost" id="repo-link" href="https://github.com/astew24/quant-finance">Repository</a>
+      </header>
+
+      <main id="top">
+        <section class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow">Live portfolio demo / quantitative research systems</p>
+            <h1>Research systems that show their work.</h1>
+            <p class="lede">
+              This portfolio pulls three applied workflows into one public review surface:
+              crypto volatility forecasting, quantamental factor research, and derivatives pricing.
+              The site is backed by committed sample artifacts from the repository rather than placeholder marketing copy.
+            </p>
+            <div class="hero-actions">
+              <a class="button" href="#crypto">See the evidence</a>
+              <a class="button button--ghost" id="live-link" href="https://astew24.github.io/quant-finance/">Live URL</a>
+            </div>
+            <div class="hero-notes">
+              <div class="note-chip">Exact sample dates, not vague “recent” claims</div>
+              <div class="note-chip">Interactive options demo runs fully client-side</div>
+              <div class="note-chip">Every section links back to auditable repo paths</div>
+            </div>
+          </div>
+
+          <aside class="hero-panel">
+            <div class="panel-label">Proof points</div>
+            <div class="metric-stack" id="hero-metrics"></div>
+          </aside>
+        </section>
+
+        <section class="signal-strip" id="evidence">
+          <article class="signal-card" id="signal-crypto"></article>
+          <article class="signal-card" id="signal-factor"></article>
+          <article class="signal-card" id="signal-options"></article>
+        </section>
+
+        <section class="section" id="crypto">
+          <div class="section-head">
+            <div>
+              <p class="section-index">01 / Crypto Volatility Risk Engine</p>
+              <h2>Walk-forward volatility research with a clean public readout</h2>
+            </div>
+            <p class="section-summary">
+              The crypto workflow uses committed BTC and ETH sample artifacts, so the public site stays fast and deterministic while still showing model behavior, risk thresholds, and overlay outcomes.
+            </p>
+          </div>
+
+          <div class="control-row">
+            <div class="toggle-group" id="crypto-toggle"></div>
+            <div class="section-meta" id="crypto-dates"></div>
+          </div>
+
+          <div class="grid-two">
+            <article class="card chart-card">
+              <div class="card-head">
+                <div>
+                  <p class="card-kicker">Market path</p>
+                  <h3>Normalized price series</h3>
+                </div>
+                <p class="card-note">Built from committed log returns and rebased to 100.</p>
+              </div>
+              <div class="chart-host" id="crypto-price-chart"></div>
+            </article>
+
+            <article class="card chart-card">
+              <div class="card-head">
+                <div>
+                  <p class="card-kicker">Model state</p>
+                  <h3>Realized, conditional, and forward volatility</h3>
+                </div>
+                <p class="card-note">Shows how the conditional process tracks the realized series and bridges into the 10-day forecast.</p>
+              </div>
+              <div class="chart-host" id="crypto-vol-chart"></div>
+            </article>
+          </div>
+
+          <div class="grid-two grid-two--bottom">
+            <article class="card metrics-card">
+              <div class="card-head">
+                <div>
+                  <p class="card-kicker">Risk readout</p>
+                  <h3>Why the model matters</h3>
+                </div>
+              </div>
+              <div class="metric-grid" id="crypto-metrics"></div>
+            </article>
+
+            <article class="card chart-card">
+              <div class="card-head">
+                <div>
+                  <p class="card-kicker">Overlay behavior</p>
+                  <h3>Vol-managed overlay vs buy-and-hold</h3>
+                </div>
+                <p class="card-note">Overlay curve is measured over the strategy evaluation window only.</p>
+              </div>
+              <div class="chart-host" id="crypto-overlay-chart"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="factor">
+          <div class="section-head">
+            <div>
+              <p class="section-index">02 / Quantamental Equity Research Platform</p>
+              <h2>Cross-sectional factor research with attribution and screening output</h2>
+            </div>
+            <p class="section-summary">
+              This section packages the backtest window, factor exposures, and latest screening slate into one scan-friendly reviewer workflow instead of spreading the story across notebooks and CSV files.
+            </p>
+          </div>
+
+          <div class="grid-two">
+            <article class="card chart-card">
+              <div class="card-head">
+                <div>
+                  <p class="card-kicker">Backtest result</p>
+                  <h3>Strategy curve vs benchmark</h3>
+                </div>
+                <p class="card-note" id="factor-dates"></p>
+              </div>
+              <div class="chart-host" id="factor-performance-chart"></div>
+            </article>
+
+            <article class="card chart-card">
+              <div class="card-head">
+                <div>
+                  <p class="card-kicker">Attribution</p>
+                  <h3>Estimated factor exposures</h3>
+                </div>
+                <p class="card-note">Regression betas show where realized performance actually loaded.</p>
+              </div>
+              <div class="chart-host chart-host--compact" id="factor-exposure-chart"></div>
+            </article>
+          </div>
+
+          <div class="grid-two grid-two--bottom">
+            <article class="card metrics-card">
+              <div class="card-head">
+                <div>
+                  <p class="card-kicker">Snapshot</p>
+                  <h3>Research metrics</h3>
+                </div>
+              </div>
+              <div class="metric-grid" id="factor-metrics"></div>
+            </article>
+
+            <article class="card table-card">
+              <div class="card-head">
+                <div>
+                  <p class="card-kicker">Latest screen</p>
+                  <h3>Top ranked names</h3>
+                </div>
+                <p class="card-note">Rank combines factor score and classifier probability.</p>
+              </div>
+              <div class="table-wrap" id="factor-table"></div>
+            </article>
+          </div>
+
+          <div class="idea-grid" id="factor-ideas"></div>
+        </section>
+
+        <section class="section" id="options">
+          <div class="section-head">
+            <div>
+              <p class="section-index">03 / Options Pricing Toolkit</p>
+              <h2>Client-side pricing demo that still feels like a real desk tool</h2>
+            </div>
+            <p class="section-summary">
+              The options section recreates the pricing logic in-browser so the live link does not degrade into a static screenshot. You can change contract assumptions and immediately see payoff and volatility sensitivity move.
+            </p>
+          </div>
+
+          <div class="grid-two options-layout">
+            <article class="card controls-card">
+              <div class="card-head">
+                <div>
+                  <p class="card-kicker">Scenario controls</p>
+                  <h3>Interactive contract setup</h3>
+                </div>
+              </div>
+
+              <div class="pill-group" id="option-type-toggle">
+                <button class="pill is-active" data-option-type="call" type="button">Call</button>
+                <button class="pill" data-option-type="put" type="button">Put</button>
+              </div>
+
+              <div class="slider-group" id="options-controls"></div>
+            </article>
+
+            <div class="options-panels">
+              <article class="card chart-card">
+                <div class="card-head">
+                  <div>
+                    <p class="card-kicker">Expiry profile</p>
+                    <h3>Intrinsic payoff and net P/L</h3>
+                  </div>
+                  <p class="card-note">Breakeven moves with the selected premium.</p>
+                </div>
+                <div class="chart-host" id="options-payoff-chart"></div>
+              </article>
+
+              <article class="card chart-card">
+                <div class="card-head">
+                  <div>
+                    <p class="card-kicker">Sensitivity</p>
+                    <h3>Option value vs implied volatility</h3>
+                  </div>
+                  <p class="card-note">The selected implied volatility is marked on the curve.</p>
+                </div>
+                <div class="chart-host" id="options-vol-chart"></div>
+              </article>
+            </div>
+          </div>
+
+          <div class="metric-grid metric-grid--wide" id="options-metrics"></div>
+        </section>
+
+        <section class="section section--review" id="review">
+          <div class="section-head">
+            <div>
+              <p class="section-index">04 / Review Path</p>
+              <h2>Code, notebooks, and deployment all stay one click away</h2>
+            </div>
+            <p class="section-summary">
+              The live link is the fast scan. The repository remains the source of truth for implementation detail, tests, and the original project pages.
+            </p>
+          </div>
+
+          <div class="review-grid">
+            <a class="review-card" id="review-repo" href="https://github.com/astew24/quant-finance">
+              <span class="review-label">Repository</span>
+              <strong>Open the full codebase</strong>
+              <p>Python packages, Streamlit dashboard, tests, notebooks, and sample outputs.</p>
+            </a>
+            <a class="review-card" id="review-crypto" href="https://github.com/astew24/quant-finance/tree/main/projects/crypto-volatility-risk-engine">
+              <span class="review-label">Project Page</span>
+              <strong>Crypto volatility writeup</strong>
+              <p>Method, results, and run instructions for the volatility workflow.</p>
+            </a>
+            <a class="review-card" id="review-factor" href="https://github.com/astew24/quant-finance/tree/main/projects/equity-factor-screening-pipeline">
+              <span class="review-label">Project Page</span>
+              <strong>Factor research writeup</strong>
+              <p>Factor construction, screening logic, and backtest framing.</p>
+            </a>
+            <a class="review-card" id="review-options" href="https://github.com/astew24/quant-finance/tree/main/projects/options-pricing-toolkit">
+              <span class="review-label">Project Page</span>
+              <strong>Options toolkit writeup</strong>
+              <p>Analytical formulas, numerical methods, and validation notes.</p>
+            </a>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <noscript>
+      <div class="noscript-banner">
+        This site expects JavaScript so it can render charts from the committed sample artifacts.
+      </div>
+    </noscript>
+
+    <script id="portfolio-data" type="application/json">
+{
+  "generated_for": "GitHub Pages portfolio microsite",
+  "live_url": "https://htmlpreview.github.io/?https://raw.githubusercontent.com/astew24/quant-finance/main/docs/live.html",
+  "repo_url": "https://github.com/astew24/quant-finance",
+  "project_links": {
+    "crypto": "https://github.com/astew24/quant-finance/tree/main/projects/crypto-volatility-risk-engine",
+    "factor": "https://github.com/astew24/quant-finance/tree/main/projects/equity-factor-screening-pipeline",
+    "options": "https://github.com/astew24/quant-finance/tree/main/projects/options-pricing-toolkit"
+  },
+  "hero_metrics": [
+    {
+      "label": "BTC Walk-Forward RMSE",
+      "value": "1.863",
+      "detail": "vs random walk 2.172"
+    },
+    {
+      "label": "Factor Strategy Total Return",
+      "value": "67.9%",
+      "detail": "Sharpe 0.62"
+    },
+    {
+      "label": "Options Cross-Check",
+      "value": "9.4134",
+      "detail": "MC 9.4158 +/- 0.1241"
+    }
+  ],
+  "crypto": {
+    "assets": [
+      {
+        "symbol": "BTC-USD",
+        "label": "BTC",
+        "date_range": {
+          "start": "2024-04-09",
+          "end": "2026-04-08"
+        },
+        "metrics": {
+          "annual_volatility": 0.4750564932539519,
+          "var_95": -0.03840216036378451,
+          "walk_forward_rmse": 1.863193893144598,
+          "direction_accuracy": 0.29979035639413,
+          "strategy_sharpe": -0.840212010639917,
+          "strategy_average_leverage": 0.8336309034458956,
+          "strategy_max_drawdown": -0.5023065143382714,
+          "forecast_end": 0.02435681007163316,
+          "random_walk_rmse": 2.171518
+        },
+        "price_series": [
+          {
+            "date": "2024-04-09",
+            "price_index": 96.521
+          },
+          {
+            "date": "2024-04-16",
+            "price_index": 89.084
+          },
+          {
+            "date": "2024-04-23",
+            "price_index": 92.707
+          },
+          {
+            "date": "2024-04-30",
+            "price_index": 84.651
+          },
+          {
+            "date": "2024-05-07",
+            "price_index": 87.022
+          },
+          {
+            "date": "2024-05-14",
+            "price_index": 85.93
+          },
+          {
+            "date": "2024-05-21",
+            "price_index": 97.913
+          },
+          {
+            "date": "2024-05-28",
+            "price_index": 95.344
+          },
+          {
+            "date": "2024-06-04",
+            "price_index": 98.515
+          },
+          {
+            "date": "2024-06-11",
+            "price_index": 93.998
+          },
+          {
+            "date": "2024-06-18",
+            "price_index": 90.939
+          },
+          {
+            "date": "2024-06-25",
+            "price_index": 86.282
+          },
+          {
+            "date": "2024-07-02",
+            "price_index": 86.595
+          },
+          {
+            "date": "2024-07-09",
+            "price_index": 80.983
+          },
+          {
+            "date": "2024-07-16",
+            "price_index": 90.878
+          },
+          {
+            "date": "2024-07-23",
+            "price_index": 92.037
+          },
+          {
+            "date": "2024-07-30",
+            "price_index": 92.419
+          },
+          {
+            "date": "2024-08-06",
+            "price_index": 78.226
+          },
+          {
+            "date": "2024-08-13",
+            "price_index": 84.613
+          },
+          {
+            "date": "2024-08-20",
+            "price_index": 82.384
+          },
+          {
+            "date": "2024-08-27",
+            "price_index": 83.07
+          },
+          {
+            "date": "2024-09-03",
+            "price_index": 80.176
+          },
+          {
+            "date": "2024-09-10",
+            "price_index": 80.48
+          },
+          {
+            "date": "2024-09-17",
+            "price_index": 84.193
+          },
+          {
+            "date": "2024-09-24",
+            "price_index": 89.768
+          },
+          {
+            "date": "2024-10-01",
+            "price_index": 84.931
+          },
+          {
+            "date": "2024-10-08",
+            "price_index": 86.739
+          },
+          {
+            "date": "2024-10-15",
+            "price_index": 93.592
+          },
+          {
+            "date": "2024-10-22",
+            "price_index": 94.039
+          },
+          {
+            "date": "2024-10-29",
+            "price_index": 101.52
+          },
+          {
+            "date": "2024-11-05",
+            "price_index": 96.828
+          },
+          {
+            "date": "2024-11-12",
+            "price_index": 122.79
+          },
+          {
+            "date": "2024-11-19",
+            "price_index": 128.915
+          },
+          {
+            "date": "2024-11-26",
+            "price_index": 128.415
+          },
+          {
+            "date": "2024-12-03",
+            "price_index": 134.023
+          },
+          {
+            "date": "2024-12-10",
+            "price_index": 134.962
+          },
+          {
+            "date": "2024-12-17",
+            "price_index": 148.176
+          },
+          {
+            "date": "2024-12-24",
+            "price_index": 137.755
+          },
+          {
+            "date": "2024-12-31",
+            "price_index": 130.431
+          },
+          {
+            "date": "2025-01-07",
+            "price_index": 135.308
+          },
+          {
+            "date": "2025-01-14",
+            "price_index": 134.765
+          },
+          {
+            "date": "2025-01-21",
+            "price_index": 148.184
+          },
+          {
+            "date": "2025-01-28",
+            "price_index": 141.464
+          },
+          {
+            "date": "2025-02-04",
+            "price_index": 136.633
+          },
+          {
+            "date": "2025-02-11",
+            "price_index": 133.667
+          },
+          {
+            "date": "2025-02-18",
+            "price_index": 133.377
+          },
+          {
+            "date": "2025-02-25",
+            "price_index": 123.879
+          },
+          {
+            "date": "2025-03-04",
+            "price_index": 121.765
+          },
+          {
+            "date": "2025-03-11",
+            "price_index": 115.679
+          },
+          {
+            "date": "2025-03-18",
+            "price_index": 115.478
+          },
+          {
+            "date": "2025-03-25",
+            "price_index": 122.114
+          },
+          {
+            "date": "2025-04-01",
+            "price_index": 118.899
+          },
+          {
+            "date": "2025-04-08",
+            "price_index": 106.478
+          },
+          {
+            "date": "2025-04-15",
+            "price_index": 116.805
+          },
+          {
+            "date": "2025-04-22",
+            "price_index": 130.448
+          },
+          {
+            "date": "2025-04-29",
+            "price_index": 131.625
+          },
+          {
+            "date": "2025-05-06",
+            "price_index": 135.14
+          },
+          {
+            "date": "2025-05-13",
+            "price_index": 145.425
+          },
+          {
+            "date": "2025-05-20",
+            "price_index": 149.084
+          },
+          {
+            "date": "2025-05-27",
+            "price_index": 152.161
+          },
+          {
+            "date": "2025-06-03",
+            "price_index": 147.188
+          },
+          {
+            "date": "2025-06-10",
+            "price_index": 153.923
+          },
+          {
+            "date": "2025-06-17",
+            "price_index": 146.027
+          },
+          {
+            "date": "2025-06-24",
+            "price_index": 148.044
+          },
+          {
+            "date": "2025-07-01",
+            "price_index": 147.559
+          },
+          {
+            "date": "2025-07-08",
+            "price_index": 152.099
+          },
+          {
+            "date": "2025-07-15",
+            "price_index": 164.421
+          },
+          {
+            "date": "2025-07-22",
+            "price_index": 167.518
+          },
+          {
+            "date": "2025-07-29",
+            "price_index": 164.624
+          },
+          {
+            "date": "2025-08-05",
+            "price_index": 159.346
+          },
+          {
+            "date": "2025-08-12",
+            "price_index": 167.766
+          },
+          {
+            "date": "2025-08-19",
+            "price_index": 157.516
+          },
+          {
+            "date": "2025-08-26",
+            "price_index": 156.081
+          },
+          {
+            "date": "2025-09-02",
+            "price_index": 155.24
+          },
+          {
+            "date": "2025-09-09",
+            "price_index": 155.701
+          },
+          {
+            "date": "2025-09-16",
+            "price_index": 163.117
+          },
+          {
+            "date": "2025-09-23",
+            "price_index": 156.376
+          },
+          {
+            "date": "2025-09-30",
+            "price_index": 159.226
+          },
+          {
+            "date": "2025-10-07",
+            "price_index": 169.551
+          },
+          {
+            "date": "2025-10-14",
+            "price_index": 157.918
+          },
+          {
+            "date": "2025-10-21",
+            "price_index": 151.438
+          },
+          {
+            "date": "2025-10-28",
+            "price_index": 157.691
+          },
+          {
+            "date": "2025-11-04",
+            "price_index": 141.824
+          },
+          {
+            "date": "2025-11-11",
+            "price_index": 143.788
+          },
+          {
+            "date": "2025-11-18",
+            "price_index": 129.76
+          },
+          {
+            "date": "2025-11-25",
+            "price_index": 121.932
+          },
+          {
+            "date": "2025-12-02",
+            "price_index": 127.528
+          },
+          {
+            "date": "2025-12-09",
+            "price_index": 129.401
+          },
+          {
+            "date": "2025-12-16",
+            "price_index": 122.633
+          },
+          {
+            "date": "2025-12-23",
+            "price_index": 122.033
+          },
+          {
+            "date": "2025-12-30",
+            "price_index": 123.452
+          },
+          {
+            "date": "2026-01-06",
+            "price_index": 130.849
+          },
+          {
+            "date": "2026-01-13",
+            "price_index": 133.073
+          },
+          {
+            "date": "2026-01-20",
+            "price_index": 123.285
+          },
+          {
+            "date": "2026-01-27",
+            "price_index": 124.39
+          },
+          {
+            "date": "2026-02-03",
+            "price_index": 105.587
+          },
+          {
+            "date": "2026-02-10",
+            "price_index": 96.039
+          },
+          {
+            "date": "2026-02-17",
+            "price_index": 94.224
+          },
+          {
+            "date": "2026-02-24",
+            "price_index": 89.458
+          },
+          {
+            "date": "2026-03-03",
+            "price_index": 95.34
+          },
+          {
+            "date": "2026-03-10",
+            "price_index": 97.621
+          },
+          {
+            "date": "2026-03-17",
+            "price_index": 103.198
+          },
+          {
+            "date": "2026-03-24",
+            "price_index": 98.446
+          },
+          {
+            "date": "2026-03-31",
+            "price_index": 95.256
+          },
+          {
+            "date": "2026-04-07",
+            "price_index": 100.432
+          },
+          {
+            "date": "2026-04-08",
+            "price_index": 99.432
+          }
+        ],
+        "vol_series": [
+          {
+            "date": "2024-04-09",
+            "realized_vol": null,
+            "conditional_vol": 0.028482751447289765
+          },
+          {
+            "date": "2024-04-16",
+            "realized_vol": null,
+            "conditional_vol": 0.03086167165198296
+          },
+          {
+            "date": "2024-04-23",
+            "realized_vol": null,
+            "conditional_vol": 0.025874147015749877
+          },
+          {
+            "date": "2024-04-30",
+            "realized_vol": null,
+            "conditional_vol": 0.020868851273994564
+          },
+          {
+            "date": "2024-05-07",
+            "realized_vol": null,
+            "conditional_vol": 0.026797439224663676
+          },
+          {
+            "date": "2024-05-14",
+            "realized_vol": 0.49322694678288775,
+            "conditional_vol": 0.024133540592868204
+          },
+          {
+            "date": "2024-05-21",
+            "realized_vol": 0.5853057407138967,
+            "conditional_vol": 0.03497888475093885
+          },
+          {
+            "date": "2024-05-28",
+            "realized_vol": 0.5754994736007214,
+            "conditional_vol": 0.023889964851444935
+          },
+          {
+            "date": "2024-06-04",
+            "realized_vol": 0.48680789278100667,
+            "conditional_vol": 0.019975856560949367
+          },
+          {
+            "date": "2024-06-11",
+            "realized_vol": 0.4672041801698443,
+            "conditional_vol": 0.01880115943977382
+          },
+          {
+            "date": "2024-06-18",
+            "realized_vol": 0.3772808436045937,
+            "conditional_vol": 0.019150511335064423
+          },
+          {
+            "date": "2024-06-25",
+            "realized_vol": 0.3056849164571144,
+            "conditional_vol": 0.024003909244899094
+          },
+          {
+            "date": "2024-07-02",
+            "realized_vol": 0.33024882744495176,
+            "conditional_vol": 0.022082352491308792
+          },
+          {
+            "date": "2024-07-09",
+            "realized_vol": 0.41632424663904216,
+            "conditional_vol": 0.027281310230709212
+          },
+          {
+            "date": "2024-07-16",
+            "realized_vol": 0.48376152119115307,
+            "conditional_vol": 0.030805234660062616
+          },
+          {
+            "date": "2024-07-23",
+            "realized_vol": 0.509587143501322,
+            "conditional_vol": 0.02391496168742587
+          },
+          {
+            "date": "2024-07-30",
+            "realized_vol": 0.4715107731106766,
+            "conditional_vol": 0.021871204857466794
+          },
+          {
+            "date": "2024-08-06",
+            "realized_vol": 0.5539260890729638,
+            "conditional_vol": 0.03625012749203115
+          },
+          {
+            "date": "2024-08-13",
+            "realized_vol": 0.6903658063280551,
+            "conditional_vol": 0.03632989367571063
+          },
+          {
+            "date": "2024-08-20",
+            "realized_vol": 0.647888065624125,
+            "conditional_vol": 0.026120058075843267
+          },
+          {
+            "date": "2024-08-27",
+            "realized_vol": 0.7109083080788828,
+            "conditional_vol": 0.02621482152415321
+          },
+          {
+            "date": "2024-09-03",
+            "realized_vol": 0.6763918895798817,
+            "conditional_vol": 0.025281778346394404
+          },
+          {
+            "date": "2024-09-10",
+            "realized_vol": 0.4894332418981531,
+            "conditional_vol": 0.026512659900178925
+          },
+          {
+            "date": "2024-09-17",
+            "realized_vol": 0.500531809367216,
+            "conditional_vol": 0.02320410619811013
+          },
+          {
+            "date": "2024-09-24",
+            "realized_vol": 0.44534033182466237,
+            "conditional_vol": 0.020505380577503302
+          },
+          {
+            "date": "2024-10-01",
+            "realized_vol": 0.4413665610792588,
+            "conditional_vol": 0.02274572325777042
+          },
+          {
+            "date": "2024-10-08",
+            "realized_vol": 0.37391842959258115,
+            "conditional_vol": 0.020721528491034823
+          },
+          {
+            "date": "2024-10-15",
+            "realized_vol": 0.3894945879234785,
+            "conditional_vol": 0.026073775020928513
+          },
+          {
+            "date": "2024-10-22",
+            "realized_vol": 0.3706836935875629,
+            "conditional_vol": 0.021494553750500574
+          },
+          {
+            "date": "2024-10-29",
+            "realized_vol": 0.40339846303306987,
+            "conditional_vol": 0.022164716849150477
+          },
+          {
+            "date": "2024-11-05",
+            "realized_vol": 0.3762461378070343,
+            "conditional_vol": 0.021166804297850644
+          },
+          {
+            "date": "2024-11-12",
+            "realized_vol": 0.560864260151122,
+            "conditional_vol": 0.04249190557398432
+          },
+          {
+            "date": "2024-11-19",
+            "realized_vol": 0.5882951186582593,
+            "conditional_vol": 0.02919341326459167
+          },
+          {
+            "date": "2024-11-26",
+            "realized_vol": 0.6186817323264933,
+            "conditional_vol": 0.028592770128313183
+          },
+          {
+            "date": "2024-12-03",
+            "realized_vol": 0.6023939254577148,
+            "conditional_vol": 0.02306418641039863
+          },
+          {
+            "date": "2024-12-10",
+            "realized_vol": 0.5617032210258978,
+            "conditional_vol": 0.024972521703249928
+          },
+          {
+            "date": "2024-12-17",
+            "realized_vol": 0.43439125850003973,
+            "conditional_vol": 0.023499965652992866
+          },
+          {
+            "date": "2024-12-24",
+            "realized_vol": 0.49382941364234323,
+            "conditional_vol": 0.02343620635235912
+          },
+          {
+            "date": "2024-12-31",
+            "realized_vol": 0.4542807469224043,
+            "conditional_vol": 0.022650246092498345
+          },
+          {
+            "date": "2025-01-07",
+            "realized_vol": 0.48362742104973633,
+            "conditional_vol": 0.022952360961064806
+          },
+          {
+            "date": "2025-01-14",
+            "realized_vol": 0.4467429800227795,
+            "conditional_vol": 0.022309396975511427
+          },
+          {
+            "date": "2025-01-21",
+            "realized_vol": 0.46522421187944635,
+            "conditional_vol": 0.02497633821092664
+          },
+          {
+            "date": "2025-01-28",
+            "realized_vol": 0.430730505126003,
+            "conditional_vol": 0.021632865575046466
+          },
+          {
+            "date": "2025-02-04",
+            "realized_vol": 0.4869454620159971,
+            "conditional_vol": 0.02491225665084908
+          },
+          {
+            "date": "2025-02-11",
+            "realized_vol": 0.41391575234733496,
+            "conditional_vol": 0.020294630694008945
+          },
+          {
+            "date": "2025-02-18",
+            "realized_vol": 0.34012699586657086,
+            "conditional_vol": 0.019194181893708605
+          },
+          {
+            "date": "2025-02-25",
+            "realized_vol": 0.362657988105561,
+            "conditional_vol": 0.025119061457677627
+          },
+          {
+            "date": "2025-03-04",
+            "realized_vol": 0.5941163991700874,
+            "conditional_vol": 0.04574010226500245
+          },
+          {
+            "date": "2025-03-11",
+            "realized_vol": 0.6709489863261512,
+            "conditional_vol": 0.0359869515197377
+          },
+          {
+            "date": "2025-03-18",
+            "realized_vol": 0.6903917185687906,
+            "conditional_vol": 0.028260439235062967
+          },
+          {
+            "date": "2025-03-25",
+            "realized_vol": 0.7240596765705034,
+            "conditional_vol": 0.02510139814654557
+          },
+          {
+            "date": "2025-04-01",
+            "realized_vol": 0.6074795965268172,
+            "conditional_vol": 0.02134269397450793
+          },
+          {
+            "date": "2025-04-08",
+            "realized_vol": 0.5126786746511242,
+            "conditional_vol": 0.027916902837373234
+          },
+          {
+            "date": "2025-04-15",
+            "realized_vol": 0.5655867401989977,
+            "conditional_vol": 0.030551092284428327
+          },
+          {
+            "date": "2025-04-22",
+            "realized_vol": 0.5696015837814794,
+            "conditional_vol": 0.02286181583636223
+          },
+          {
+            "date": "2025-04-29",
+            "realized_vol": 0.5486814474852214,
+            "conditional_vol": 0.02224259123165608
+          },
+          {
+            "date": "2025-05-06",
+            "realized_vol": 0.47642880695368295,
+            "conditional_vol": 0.019762784481001053
+          },
+          {
+            "date": "2025-05-13",
+            "realized_vol": 0.3582173605440161,
+            "conditional_vol": 0.023097108735025983
+          },
+          {
+            "date": "2025-05-20",
+            "realized_vol": 0.3700296769659723,
+            "conditional_vol": 0.02083110901223026
+          },
+          {
+            "date": "2025-05-27",
+            "realized_vol": 0.34497159225820007,
+            "conditional_vol": 0.02154283158191142
+          },
+          {
+            "date": "2025-06-03",
+            "realized_vol": 0.3462554569160127,
+            "conditional_vol": 0.019225883920606784
+          },
+          {
+            "date": "2025-06-10",
+            "realized_vol": 0.33248361206260374,
+            "conditional_vol": 0.024054809342438324
+          },
+          {
+            "date": "2025-06-17",
+            "realized_vol": 0.3367007350409236,
+            "conditional_vol": 0.020068951693276108
+          },
+          {
+            "date": "2025-06-24",
+            "realized_vol": 0.32615115207170925,
+            "conditional_vol": 0.023634940978702668
+          },
+          {
+            "date": "2025-07-01",
+            "realized_vol": 0.3197949539406611,
+            "conditional_vol": 0.019305841393696198
+          },
+          {
+            "date": "2025-07-08",
+            "realized_vol": 0.3081586948311932,
+            "conditional_vol": 0.019167641746286296
+          },
+          {
+            "date": "2025-07-15",
+            "realized_vol": 0.3051436343207649,
+            "conditional_vol": 0.02061439184318041
+          },
+          {
+            "date": "2025-07-22",
+            "realized_vol": 0.28583083029485035,
+            "conditional_vol": 0.018265982910730998
+          },
+          {
+            "date": "2025-07-29",
+            "realized_vol": 0.2623875103750534,
+            "conditional_vol": 0.018506863365192118
+          },
+          {
+            "date": "2025-08-05",
+            "realized_vol": 0.2572843021243625,
+            "conditional_vol": 0.018992508262135173
+          },
+          {
+            "date": "2025-08-12",
+            "realized_vol": 0.2240081674203631,
+            "conditional_vol": 0.019373880474094857
+          },
+          {
+            "date": "2025-08-19",
+            "realized_vol": 0.29270768008303016,
+            "conditional_vol": 0.020565557842824614
+          },
+          {
+            "date": "2025-08-26",
+            "realized_vol": 0.34448185055469815,
+            "conditional_vol": 0.023903286951307102
+          },
+          {
+            "date": "2025-09-02",
+            "realized_vol": 0.3609839701389083,
+            "conditional_vol": 0.021261208535961952
+          },
+          {
+            "date": "2025-09-09",
+            "realized_vol": 0.3413235223882221,
+            "conditional_vol": 0.018605765518775207
+          },
+          {
+            "date": "2025-09-16",
+            "realized_vol": 0.30991863760998917,
+            "conditional_vol": 0.017973177813956662
+          },
+          {
+            "date": "2025-09-23",
+            "realized_vol": 0.2508198544887978,
+            "conditional_vol": 0.01889000487703698
+          },
+          {
+            "date": "2025-09-30",
+            "realized_vol": 0.24420010246677157,
+            "conditional_vol": 0.021360827280666413
+          },
+          {
+            "date": "2025-10-07",
+            "realized_vol": 0.2945683486199777,
+            "conditional_vol": 0.02043796396634394
+          },
+          {
+            "date": "2025-10-14",
+            "realized_vol": 0.4245229763989555,
+            "conditional_vol": 0.02837048732351943
+          },
+          {
+            "date": "2025-10-21",
+            "realized_vol": 0.44899755338323805,
+            "conditional_vol": 0.022796475730905465
+          },
+          {
+            "date": "2025-10-28",
+            "realized_vol": 0.4320924053288416,
+            "conditional_vol": 0.020740466741541244
+          },
+          {
+            "date": "2025-11-04",
+            "realized_vol": 0.446734568432077,
+            "conditional_vol": 0.022671061289769603
+          },
+          {
+            "date": "2025-11-11",
+            "realized_vol": 0.3800422094304574,
+            "conditional_vol": 0.02331342179115433
+          },
+          {
+            "date": "2025-11-18",
+            "realized_vol": 0.4154338787726907,
+            "conditional_vol": 0.025258342624194435
+          },
+          {
+            "date": "2025-11-25",
+            "realized_vol": 0.43049819722460625,
+            "conditional_vol": 0.02476455215152974
+          },
+          {
+            "date": "2025-12-02",
+            "realized_vol": 0.519379366711035,
+            "conditional_vol": 0.025241409880806503
+          },
+          {
+            "date": "2025-12-09",
+            "realized_vol": 0.48411261429691343,
+            "conditional_vol": 0.0235875261133782
+          },
+          {
+            "date": "2025-12-16",
+            "realized_vol": 0.4489480911064518,
+            "conditional_vol": 0.022045870084504506
+          },
+          {
+            "date": "2025-12-23",
+            "realized_vol": 0.4035519281679922,
+            "conditional_vol": 0.020130060210788545
+          },
+          {
+            "date": "2025-12-30",
+            "realized_vol": 0.3801243451342179,
+            "conditional_vol": 0.017932554322961626
+          },
+          {
+            "date": "2026-01-06",
+            "realized_vol": 0.2653520625506068,
+            "conditional_vol": 0.02006485891786214
+          },
+          {
+            "date": "2026-01-13",
+            "realized_vol": 0.28399078097530306,
+            "conditional_vol": 0.018388696465528043
+          },
+          {
+            "date": "2026-01-20",
+            "realized_vol": 0.30994102563740517,
+            "conditional_vol": 0.020172828292120474
+          },
+          {
+            "date": "2026-01-27",
+            "realized_vol": 0.33433931118413474,
+            "conditional_vol": 0.022185074627983338
+          },
+          {
+            "date": "2026-02-03",
+            "realized_vol": 0.45898575415494797,
+            "conditional_vol": 0.02950248277484048
+          },
+          {
+            "date": "2026-02-10",
+            "realized_vol": 0.8180010932435088,
+            "conditional_vol": 0.049048232979001405
+          },
+          {
+            "date": "2026-02-17",
+            "realized_vol": 0.8134084181516302,
+            "conditional_vol": 0.03058323839219963
+          },
+          {
+            "date": "2026-02-24",
+            "realized_vol": 0.8133377614439468,
+            "conditional_vol": 0.026353759968203584
+          },
+          {
+            "date": "2026-03-03",
+            "realized_vol": 0.8208924223152733,
+            "conditional_vol": 0.028380285242926268
+          },
+          {
+            "date": "2026-03-10",
+            "realized_vol": 0.520547148989014,
+            "conditional_vol": 0.02912605502781862
+          },
+          {
+            "date": "2026-03-17",
+            "realized_vol": 0.4988109516987795,
+            "conditional_vol": 0.023544249153167746
+          },
+          {
+            "date": "2026-03-24",
+            "realized_vol": 0.5441605762093159,
+            "conditional_vol": 0.026180691520925673
+          },
+          {
+            "date": "2026-03-31",
+            "realized_vol": 0.5024051181628388,
+            "conditional_vol": 0.022978048520694447
+          },
+          {
+            "date": "2026-04-07",
+            "realized_vol": 0.4193830046901963,
+            "conditional_vol": 0.020524412739173145
+          },
+          {
+            "date": "2026-04-08",
+            "realized_vol": 0.4038611136048154,
+            "conditional_vol": 0.024412804598476875
+          }
+        ],
+        "forecast_series": [
+          {
+            "date": "2026-04-09",
+            "forecast_vol": 0.023385
+          },
+          {
+            "date": "2026-04-10",
+            "forecast_vol": 0.023535
+          },
+          {
+            "date": "2026-04-11",
+            "forecast_vol": 0.023673
+          },
+          {
+            "date": "2026-04-12",
+            "forecast_vol": 0.023799
+          },
+          {
+            "date": "2026-04-13",
+            "forecast_vol": 0.023914
+          },
+          {
+            "date": "2026-04-14",
+            "forecast_vol": 0.024019
+          },
+          {
+            "date": "2026-04-15",
+            "forecast_vol": 0.024115
+          },
+          {
+            "date": "2026-04-16",
+            "forecast_vol": 0.024203
+          },
+          {
+            "date": "2026-04-17",
+            "forecast_vol": 0.024283
+          },
+          {
+            "date": "2026-04-18",
+            "forecast_vol": 0.024357
+          }
+        ],
+        "overlay_series": [
+          {
+            "date": "2024-12-17",
+            "strategy_curve": 0.0,
+            "benchmark_curve": 0.001,
+            "position": 0.729
+          },
+          {
+            "date": "2024-12-23",
+            "strategy_curve": -0.0799,
+            "benchmark_curve": -0.1092,
+            "position": 0.7109
+          },
+          {
+            "date": "2024-12-29",
+            "strategy_curve": -0.0882,
+            "benchmark_curve": -0.1217,
+            "position": 0.7172
+          },
+          {
+            "date": "2025-01-04",
+            "strategy_curve": -0.054,
+            "benchmark_curve": -0.078,
+            "position": 0.7602
+          },
+          {
+            "date": "2025-01-10",
+            "strategy_curve": -0.0783,
+            "benchmark_curve": -0.1138,
+            "position": 0.694
+          },
+          {
+            "date": "2025-01-16",
+            "strategy_curve": -0.0418,
+            "benchmark_curve": -0.0674,
+            "position": 0.7151
+          },
+          {
+            "date": "2025-01-22",
+            "strategy_curve": -0.0151,
+            "benchmark_curve": -0.0336,
+            "position": 0.6928
+          },
+          {
+            "date": "2025-01-28",
+            "strategy_curve": -0.0325,
+            "benchmark_curve": -0.0555,
+            "position": 0.7568
+          },
+          {
+            "date": "2025-02-03",
+            "strategy_curve": -0.0338,
+            "benchmark_curve": -0.0565,
+            "position": 0.7605
+          },
+          {
+            "date": "2025-02-09",
+            "strategy_curve": -0.0686,
+            "benchmark_curve": -0.1028,
+            "position": 0.761
+          },
+          {
+            "date": "2025-02-15",
+            "strategy_curve": -0.0608,
+            "benchmark_curve": -0.0933,
+            "position": 0.7896
+          },
+          {
+            "date": "2025-02-21",
+            "strategy_curve": -0.0722,
+            "benchmark_curve": -0.1074,
+            "position": 0.8227
+          },
+          {
+            "date": "2025-02-27",
+            "strategy_curve": -0.1584,
+            "benchmark_curve": -0.2159,
+            "position": 0.644
+          },
+          {
+            "date": "2025-03-05",
+            "strategy_curve": -0.119,
+            "benchmark_curve": -0.1689,
+            "position": 0.4615
+          },
+          {
+            "date": "2025-03-11",
+            "strategy_curve": -0.1649,
+            "benchmark_curve": -0.2437,
+            "position": 0.5416
+          },
+          {
+            "date": "2025-03-17",
+            "strategy_curve": -0.1585,
+            "benchmark_curve": -0.2339,
+            "position": 0.6426
+          },
+          {
+            "date": "2025-03-23",
+            "strategy_curve": -0.1434,
+            "benchmark_curve": -0.2175,
+            "position": 0.6952
+          },
+          {
+            "date": "2025-03-29",
+            "strategy_curve": -0.1713,
+            "benchmark_curve": -0.2496,
+            "position": 0.7296
+          },
+          {
+            "date": "2025-04-04",
+            "strategy_curve": -0.1616,
+            "benchmark_curve": -0.2391,
+            "position": 0.736
+          },
+          {
+            "date": "2025-04-10",
+            "strategy_curve": -0.1962,
+            "benchmark_curve": -0.2823,
+            "position": 0.5244
+          },
+          {
+            "date": "2025-04-16",
+            "strategy_curve": -0.1735,
+            "benchmark_curve": -0.2437,
+            "position": 0.6638
+          },
+          {
+            "date": "2025-04-22",
+            "strategy_curve": -0.1055,
+            "benchmark_curve": -0.1612,
+            "position": 0.7558
+          },
+          {
+            "date": "2025-04-28",
+            "strategy_curve": -0.0957,
+            "benchmark_curve": -0.1475,
+            "position": 0.7475
+          },
+          {
+            "date": "2025-05-04",
+            "strategy_curve": -0.101,
+            "benchmark_curve": -0.1539,
+            "position": 0.7909
+          },
+          {
+            "date": "2025-05-10",
+            "strategy_curve": -0.0254,
+            "benchmark_curve": -0.0629,
+            "position": 0.674
+          },
+          {
+            "date": "2025-05-16",
+            "strategy_curve": -0.0336,
+            "benchmark_curve": -0.0739,
+            "position": 0.7912
+          },
+          {
+            "date": "2025-05-22",
+            "strategy_curve": 0.0258,
+            "benchmark_curve": -0.0017,
+            "position": 0.7606
+          },
+          {
+            "date": "2025-05-28",
+            "strategy_curve": -0.0033,
+            "benchmark_curve": -0.0373,
+            "position": 0.7963
+          },
+          {
+            "date": "2025-06-03",
+            "strategy_curve": -0.0212,
+            "benchmark_curve": -0.0588,
+            "position": 0.8236
+          },
+          {
+            "date": "2025-06-09",
+            "strategy_curve": 0.0104,
+            "benchmark_curve": -0.0172,
+            "position": 0.795
+          },
+          {
+            "date": "2025-06-15",
+            "strategy_curve": -0.0232,
+            "benchmark_curve": -0.0598,
+            "position": 0.791
+          },
+          {
+            "date": "2025-06-21",
+            "strategy_curve": -0.049,
+            "benchmark_curve": -0.0896,
+            "position": 0.8346
+          },
+          {
+            "date": "2025-06-27",
+            "strategy_curve": -0.0138,
+            "benchmark_curve": -0.0477,
+            "position": 0.7955
+          },
+          {
+            "date": "2025-07-03",
+            "strategy_curve": 0.0051,
+            "benchmark_curve": -0.0255,
+            "position": 0.7948
+          },
+          {
+            "date": "2025-07-09",
+            "strategy_curve": 0.0209,
+            "benchmark_curve": -0.0111,
+            "position": 0.9639
+          },
+          {
+            "date": "2025-07-15",
+            "strategy_curve": 0.0733,
+            "benchmark_curve": 0.045,
+            "position": 0.8778
+          },
+          {
+            "date": "2025-07-21",
+            "strategy_curve": 0.0699,
+            "benchmark_curve": 0.0419,
+            "position": 0.9382
+          },
+          {
+            "date": "2025-07-27",
+            "strategy_curve": 0.0878,
+            "benchmark_curve": 0.0593,
+            "position": 0.9819
+          },
+          {
+            "date": "2025-08-02",
+            "strategy_curve": 0.0115,
+            "benchmark_curve": -0.0026,
+            "position": 1.1387
+          },
+          {
+            "date": "2025-08-08",
+            "strategy_curve": 0.057,
+            "benchmark_curve": 0.0339,
+            "position": 1.1813
+          },
+          {
+            "date": "2025-08-14",
+            "strategy_curve": 0.0806,
+            "benchmark_curve": 0.047,
+            "position": 1.1407
+          },
+          {
+            "date": "2025-08-20",
+            "strategy_curve": 0.041,
+            "benchmark_curve": 0.0103,
+            "position": 0.9598
+          },
+          {
+            "date": "2025-08-26",
+            "strategy_curve": 0.0214,
+            "benchmark_curve": -0.0132,
+            "position": 0.8296
+          },
+          {
+            "date": "2025-09-01",
+            "strategy_curve": -0.0006,
+            "benchmark_curve": -0.0366,
+            "position": 0.8814
+          },
+          {
+            "date": "2025-09-07",
+            "strategy_curve": 0.0154,
+            "benchmark_curve": -0.0199,
+            "position": 1.0392
+          },
+          {
+            "date": "2025-09-13",
+            "strategy_curve": 0.062,
+            "benchmark_curve": 0.0218,
+            "position": 1.0968
+          },
+          {
+            "date": "2025-09-19",
+            "strategy_curve": 0.0583,
+            "benchmark_curve": 0.0193,
+            "position": 1.2697
+          },
+          {
+            "date": "2025-09-25",
+            "strategy_curve": -0.0223,
+            "benchmark_curve": -0.0402,
+            "position": 1.2645
+          },
+          {
+            "date": "2025-10-01",
+            "strategy_curve": 0.0617,
+            "benchmark_curve": 0.043,
+            "position": 1.0056
+          },
+          {
+            "date": "2025-10-07",
+            "strategy_curve": 0.0795,
+            "benchmark_curve": 0.0669,
+            "position": 0.9991
+          },
+          {
+            "date": "2025-10-13",
+            "strategy_curve": 0.0131,
+            "benchmark_curve": 0.0086,
+            "position": 0.612
+          },
+          {
+            "date": "2025-10-19",
+            "strategy_curve": -0.0267,
+            "benchmark_curve": -0.05,
+            "position": 0.7991
+          },
+          {
+            "date": "2025-10-25",
+            "strategy_curve": -0.0023,
+            "benchmark_curve": -0.0247,
+            "position": 0.9914
+          },
+          {
+            "date": "2025-10-31",
+            "strategy_curve": -0.0238,
+            "benchmark_curve": -0.0438,
+            "position": 1.0845
+          },
+          {
+            "date": "2025-11-06",
+            "strategy_curve": -0.1056,
+            "benchmark_curve": -0.118,
+            "position": 1.0483
+          },
+          {
+            "date": "2025-11-12",
+            "strategy_curve": -0.1019,
+            "benchmark_curve": -0.1158,
+            "position": 0.9919
+          },
+          {
+            "date": "2025-11-18",
+            "strategy_curve": -0.1803,
+            "benchmark_curve": -0.1934,
+            "position": 0.9059
+          },
+          {
+            "date": "2025-11-24",
+            "strategy_curve": -0.2197,
+            "benchmark_curve": -0.2358,
+            "position": 0.8505
+          },
+          {
+            "date": "2025-11-30",
+            "strategy_curve": -0.2038,
+            "benchmark_curve": -0.218,
+            "position": 0.906
+          },
+          {
+            "date": "2025-12-06",
+            "strategy_curve": -0.2156,
+            "benchmark_curve": -0.2304,
+            "position": 0.7997
+          },
+          {
+            "date": "2025-12-12",
+            "strategy_curve": -0.2099,
+            "benchmark_curve": -0.2223,
+            "position": 0.9222
+          },
+          {
+            "date": "2025-12-18",
+            "strategy_curve": -0.2503,
+            "benchmark_curve": -0.2643,
+            "position": 0.9204
+          },
+          {
+            "date": "2025-12-24",
+            "strategy_curve": -0.2334,
+            "benchmark_curve": -0.2462,
+            "position": 0.9464
+          },
+          {
+            "date": "2025-12-30",
+            "strategy_curve": -0.226,
+            "benchmark_curve": -0.2393,
+            "position": 1.0627
+          },
+          {
+            "date": "2026-01-05",
+            "strategy_curve": -0.1744,
+            "benchmark_curve": -0.1929,
+            "position": 1.1031
+          },
+          {
+            "date": "2026-01-11",
+            "strategy_curve": -0.2036,
+            "benchmark_curve": -0.2195,
+            "position": 1.108
+          },
+          {
+            "date": "2026-01-17",
+            "strategy_curve": -0.1614,
+            "benchmark_curve": -0.1838,
+            "position": 1.0249
+          },
+          {
+            "date": "2026-01-23",
+            "strategy_curve": -0.2158,
+            "benchmark_curve": -0.2329,
+            "position": 0.9748
+          },
+          {
+            "date": "2026-01-29",
+            "strategy_curve": -0.2621,
+            "benchmark_curve": -0.2768,
+            "position": 1.0172
+          },
+          {
+            "date": "2026-02-04",
+            "strategy_curve": -0.3445,
+            "benchmark_curve": -0.3782,
+            "position": 0.7023
+          },
+          {
+            "date": "2026-02-10",
+            "strategy_curve": -0.3986,
+            "benchmark_curve": -0.4257,
+            "position": 0.3126
+          },
+          {
+            "date": "2026-02-16",
+            "strategy_curve": -0.3977,
+            "benchmark_curve": -0.4261,
+            "position": 0.5186
+          },
+          {
+            "date": "2026-02-22",
+            "strategy_curve": -0.4032,
+            "benchmark_curve": -0.4362,
+            "position": 0.9702
+          },
+          {
+            "date": "2026-02-28",
+            "strategy_curve": -0.4151,
+            "benchmark_curve": -0.4435,
+            "position": 0.6382
+          },
+          {
+            "date": "2026-03-06",
+            "strategy_curve": -0.4032,
+            "benchmark_curve": -0.4364,
+            "position": 0.5319
+          },
+          {
+            "date": "2026-03-12",
+            "strategy_curve": -0.3903,
+            "benchmark_curve": -0.4176,
+            "position": 0.6668
+          },
+          {
+            "date": "2026-03-18",
+            "strategy_curve": -0.3852,
+            "benchmark_curve": -0.4123,
+            "position": 0.8373
+          },
+          {
+            "date": "2026-03-24",
+            "strategy_curve": -0.3895,
+            "benchmark_curve": -0.4192,
+            "position": 0.6699
+          },
+          {
+            "date": "2026-03-30",
+            "strategy_curve": -0.4143,
+            "benchmark_curve": -0.4515,
+            "position": 0.7628
+          },
+          {
+            "date": "2026-04-05",
+            "strategy_curve": -0.3963,
+            "benchmark_curve": -0.4331,
+            "position": 0.9724
+          },
+          {
+            "date": "2026-04-08",
+            "strategy_curve": -0.377,
+            "benchmark_curve": -0.4152,
+            "position": 0.7309
+          }
+        ]
+      },
+      {
+        "symbol": "ETH-USD",
+        "label": "ETH",
+        "date_range": {
+          "start": "2024-04-09",
+          "end": "2026-04-08"
+        },
+        "metrics": {
+          "annual_volatility": 0.7148084269949114,
+          "var_95": -0.0577500628793215,
+          "walk_forward_rmse": 3.060072645754333,
+          "direction_accuracy": 0.32075471698113206,
+          "strategy_sharpe": -0.7281468667096267,
+          "strategy_average_leverage": 0.4813794504973784,
+          "strategy_max_drawdown": -0.4139542165396841,
+          "forecast_end": 0.037290480447624494,
+          "random_walk_rmse": 3.672827
+        },
+        "price_series": [
+          {
+            "date": "2024-04-09",
+            "price_index": 94.855
+          },
+          {
+            "date": "2024-04-16",
+            "price_index": 83.482
+          },
+          {
+            "date": "2024-04-23",
+            "price_index": 87.135
+          },
+          {
+            "date": "2024-04-30",
+            "price_index": 81.517
+          },
+          {
+            "date": "2024-05-07",
+            "price_index": 81.362
+          },
+          {
+            "date": "2024-05-14",
+            "price_index": 77.968
+          },
+          {
+            "date": "2024-05-21",
+            "price_index": 102.544
+          },
+          {
+            "date": "2024-05-28",
+            "price_index": 103.923
+          },
+          {
+            "date": "2024-06-04",
+            "price_index": 103.172
+          },
+          {
+            "date": "2024-06-11",
+            "price_index": 94.67
+          },
+          {
+            "date": "2024-06-18",
+            "price_index": 94.273
+          },
+          {
+            "date": "2024-06-25",
+            "price_index": 91.874
+          },
+          {
+            "date": "2024-07-02",
+            "price_index": 92.452
+          },
+          {
+            "date": "2024-07-09",
+            "price_index": 82.917
+          },
+          {
+            "date": "2024-07-16",
+            "price_index": 93.186
+          },
+          {
+            "date": "2024-07-23",
+            "price_index": 94.228
+          },
+          {
+            "date": "2024-07-30",
+            "price_index": 88.726
+          },
+          {
+            "date": "2024-08-06",
+            "price_index": 66.537
+          },
+          {
+            "date": "2024-08-13",
+            "price_index": 73.165
+          },
+          {
+            "date": "2024-08-20",
+            "price_index": 69.632
+          },
+          {
+            "date": "2024-08-27",
+            "price_index": 66.537
+          },
+          {
+            "date": "2024-09-03",
+            "price_index": 65.505
+          },
+          {
+            "date": "2024-09-10",
+            "price_index": 64.666
+          },
+          {
+            "date": "2024-09-17",
+            "price_index": 63.37
+          },
+          {
+            "date": "2024-09-24",
+            "price_index": 71.831
+          },
+          {
+            "date": "2024-10-01",
+            "price_index": 66.271
+          },
+          {
+            "date": "2024-10-08",
+            "price_index": 66.026
+          },
+          {
+            "date": "2024-10-15",
+            "price_index": 70.523
+          },
+          {
+            "date": "2024-10-22",
+            "price_index": 70.906
+          },
+          {
+            "date": "2024-10-29",
+            "price_index": 71.387
+          },
+          {
+            "date": "2024-11-05",
+            "price_index": 65.56
+          },
+          {
+            "date": "2024-11-12",
+            "price_index": 87.848
+          },
+          {
+            "date": "2024-11-19",
+            "price_index": 84.199
+          },
+          {
+            "date": "2024-11-26",
+            "price_index": 90.02
+          },
+          {
+            "date": "2024-12-03",
+            "price_index": 97.982
+          },
+          {
+            "date": "2024-12-10",
+            "price_index": 98.283
+          },
+          {
+            "date": "2024-12-17",
+            "price_index": 105.182
+          },
+          {
+            "date": "2024-12-24",
+            "price_index": 94.5
+          },
+          {
+            "date": "2024-12-31",
+            "price_index": 90.183
+          },
+          {
+            "date": "2025-01-07",
+            "price_index": 91.51
+          },
+          {
+            "date": "2025-01-14",
+            "price_index": 87.238
+          },
+          {
+            "date": "2025-01-21",
+            "price_index": 90.044
+          },
+          {
+            "date": "2025-01-28",
+            "price_index": 83.271
+          },
+          {
+            "date": "2025-02-04",
+            "price_index": 74.014
+          },
+          {
+            "date": "2025-02-11",
+            "price_index": 70.435
+          },
+          {
+            "date": "2025-02-18",
+            "price_index": 72.236
+          },
+          {
+            "date": "2025-02-25",
+            "price_index": 67.48
+          },
+          {
+            "date": "2025-03-04",
+            "price_index": 58.724
+          },
+          {
+            "date": "2025-03-11",
+            "price_index": 51.954
+          },
+          {
+            "date": "2025-03-18",
+            "price_index": 52.297
+          },
+          {
+            "date": "2025-03-25",
+            "price_index": 55.957
+          },
+          {
+            "date": "2025-04-01",
+            "price_index": 51.565
+          },
+          {
+            "date": "2025-04-08",
+            "price_index": 39.849
+          },
+          {
+            "date": "2025-04-15",
+            "price_index": 42.991
+          },
+          {
+            "date": "2025-04-22",
+            "price_index": 47.556
+          },
+          {
+            "date": "2025-04-29",
+            "price_index": 48.688
+          },
+          {
+            "date": "2025-05-06",
+            "price_index": 49.119
+          },
+          {
+            "date": "2025-05-13",
+            "price_index": 72.528
+          },
+          {
+            "date": "2025-05-20",
+            "price_index": 68.308
+          },
+          {
+            "date": "2025-05-27",
+            "price_index": 72.067
+          },
+          {
+            "date": "2025-06-03",
+            "price_index": 70.178
+          },
+          {
+            "date": "2025-06-10",
+            "price_index": 76.138
+          },
+          {
+            "date": "2025-06-17",
+            "price_index": 67.945
+          },
+          {
+            "date": "2025-06-24",
+            "price_index": 66.247
+          },
+          {
+            "date": "2025-07-01",
+            "price_index": 65.104
+          },
+          {
+            "date": "2025-07-08",
+            "price_index": 70.779
+          },
+          {
+            "date": "2025-07-15",
+            "price_index": 84.97
+          },
+          {
+            "date": "2025-07-22",
+            "price_index": 101.457
+          },
+          {
+            "date": "2025-07-29",
+            "price_index": 102.656
+          },
+          {
+            "date": "2025-08-05",
+            "price_index": 97.743
+          },
+          {
+            "date": "2025-08-12",
+            "price_index": 124.237
+          },
+          {
+            "date": "2025-08-19",
+            "price_index": 110.234
+          },
+          {
+            "date": "2025-08-26",
+            "price_index": 124.494
+          },
+          {
+            "date": "2025-09-02",
+            "price_index": 117.051
+          },
+          {
+            "date": "2025-09-09",
+            "price_index": 116.609
+          },
+          {
+            "date": "2025-09-16",
+            "price_index": 121.873
+          },
+          {
+            "date": "2025-09-23",
+            "price_index": 112.725
+          },
+          {
+            "date": "2025-09-30",
+            "price_index": 112.196
+          },
+          {
+            "date": "2025-10-07",
+            "price_index": 120.455
+          },
+          {
+            "date": "2025-10-14",
+            "price_index": 111.64
+          },
+          {
+            "date": "2025-10-21",
+            "price_index": 104.911
+          },
+          {
+            "date": "2025-10-28",
+            "price_index": 107.766
+          },
+          {
+            "date": "2025-11-04",
+            "price_index": 89.102
+          },
+          {
+            "date": "2025-11-11",
+            "price_index": 92.423
+          },
+          {
+            "date": "2025-11-18",
+            "price_index": 84.512
+          },
+          {
+            "date": "2025-11-25",
+            "price_index": 80.046
+          },
+          {
+            "date": "2025-12-02",
+            "price_index": 81.129
+          },
+          {
+            "date": "2025-12-09",
+            "price_index": 89.874
+          },
+          {
+            "date": "2025-12-16",
+            "price_index": 80.215
+          },
+          {
+            "date": "2025-12-23",
+            "price_index": 80.193
+          },
+          {
+            "date": "2025-12-30",
+            "price_index": 80.411
+          },
+          {
+            "date": "2026-01-06",
+            "price_index": 89.193
+          },
+          {
+            "date": "2026-01-13",
+            "price_index": 89.901
+          },
+          {
+            "date": "2026-01-20",
+            "price_index": 79.442
+          },
+          {
+            "date": "2026-01-27",
+            "price_index": 81.785
+          },
+          {
+            "date": "2026-02-03",
+            "price_index": 60.281
+          },
+          {
+            "date": "2026-02-10",
+            "price_index": 54.651
+          },
+          {
+            "date": "2026-02-17",
+            "price_index": 53.912
+          },
+          {
+            "date": "2026-02-24",
+            "price_index": 50.144
+          },
+          {
+            "date": "2026-03-03",
+            "price_index": 53.657
+          },
+          {
+            "date": "2026-03-10",
+            "price_index": 55.127
+          },
+          {
+            "date": "2026-03-17",
+            "price_index": 62.73
+          },
+          {
+            "date": "2026-03-24",
+            "price_index": 58.336
+          },
+          {
+            "date": "2026-03-31",
+            "price_index": 56.956
+          },
+          {
+            "date": "2026-04-07",
+            "price_index": 60.667
+          },
+          {
+            "date": "2026-04-08",
+            "price_index": 59.692
+          }
+        ],
+        "vol_series": [
+          {
+            "date": "2024-04-09",
+            "realized_vol": null,
+            "conditional_vol": 0.03720368642594336
+          },
+          {
+            "date": "2024-04-16",
+            "realized_vol": null,
+            "conditional_vol": 0.038944191953615266
+          },
+          {
+            "date": "2024-04-23",
+            "realized_vol": null,
+            "conditional_vol": 0.034385406590085765
+          },
+          {
+            "date": "2024-04-30",
+            "realized_vol": null,
+            "conditional_vol": 0.03430297249329065
+          },
+          {
+            "date": "2024-05-07",
+            "realized_vol": null,
+            "conditional_vol": 0.03464977959815825
+          },
+          {
+            "date": "2024-05-14",
+            "realized_vol": 0.44223746196715386,
+            "conditional_vol": 0.03391612812610519
+          },
+          {
+            "date": "2024-05-21",
+            "realized_vol": 0.7949252878925778,
+            "conditional_vol": 0.06378532606709687
+          },
+          {
+            "date": "2024-05-28",
+            "realized_vol": 0.7880164931314599,
+            "conditional_vol": 0.034723827019006094
+          },
+          {
+            "date": "2024-06-04",
+            "realized_vol": 0.740975227554783,
+            "conditional_vol": 0.03355940244220939
+          },
+          {
+            "date": "2024-06-11",
+            "realized_vol": 0.748609739665826,
+            "conditional_vol": 0.0338521833548724
+          },
+          {
+            "date": "2024-06-18",
+            "realized_vol": 0.7160099048661528,
+            "conditional_vol": 0.035194575945925094
+          },
+          {
+            "date": "2024-06-25",
+            "realized_vol": 0.3443621760874603,
+            "conditional_vol": 0.03435988325480698
+          },
+          {
+            "date": "2024-07-02",
+            "realized_vol": 0.34969717600502953,
+            "conditional_vol": 0.03376078169166552
+          },
+          {
+            "date": "2024-07-09",
+            "realized_vol": 0.48571460250704696,
+            "conditional_vol": 0.03722165024293414
+          },
+          {
+            "date": "2024-07-16",
+            "realized_vol": 0.5278668424429623,
+            "conditional_vol": 0.040490412784629476
+          },
+          {
+            "date": "2024-07-23",
+            "realized_vol": 0.5248403019269107,
+            "conditional_vol": 0.034659701496018006
+          },
+          {
+            "date": "2024-07-30",
+            "realized_vol": 0.5693392727103219,
+            "conditional_vol": 0.03435127936997356
+          },
+          {
+            "date": "2024-08-06",
+            "realized_vol": 0.6875322039232024,
+            "conditional_vol": 0.050422554298427326
+          },
+          {
+            "date": "2024-08-13",
+            "realized_vol": 0.8902894584332475,
+            "conditional_vol": 0.041473428232947376
+          },
+          {
+            "date": "2024-08-20",
+            "realized_vol": 0.8440082042812298,
+            "conditional_vol": 0.03378842478431622
+          },
+          {
+            "date": "2024-08-27",
+            "realized_vol": 0.8861524215784461,
+            "conditional_vol": 0.03488021893460319
+          },
+          {
+            "date": "2024-09-03",
+            "realized_vol": 0.8589299048765002,
+            "conditional_vol": 0.03711221698687092
+          },
+          {
+            "date": "2024-09-10",
+            "realized_vol": 0.6227390959735745,
+            "conditional_vol": 0.03562666597889828
+          },
+          {
+            "date": "2024-09-17",
+            "realized_vol": 0.5999539145554292,
+            "conditional_vol": 0.035096428279090944
+          },
+          {
+            "date": "2024-09-24",
+            "realized_vol": 0.607684231779824,
+            "conditional_vol": 0.03502884947913052
+          },
+          {
+            "date": "2024-10-01",
+            "realized_vol": 0.5644995207298797,
+            "conditional_vol": 0.034273813314959135
+          },
+          {
+            "date": "2024-10-08",
+            "realized_vol": 0.46770188044120053,
+            "conditional_vol": 0.03387739609076759
+          },
+          {
+            "date": "2024-10-15",
+            "realized_vol": 0.4829618773946554,
+            "conditional_vol": 0.038775624662651914
+          },
+          {
+            "date": "2024-10-22",
+            "realized_vol": 0.467976908213376,
+            "conditional_vol": 0.0356183982479035
+          },
+          {
+            "date": "2024-10-29",
+            "realized_vol": 0.5039758741784229,
+            "conditional_vol": 0.03480235488208608
+          },
+          {
+            "date": "2024-11-05",
+            "realized_vol": 0.4750616688254731,
+            "conditional_vol": 0.03472792804762102
+          },
+          {
+            "date": "2024-11-12",
+            "realized_vol": 0.7068902321649208,
+            "conditional_vol": 0.03997032073235085
+          },
+          {
+            "date": "2024-11-19",
+            "realized_vol": 0.7229701118992322,
+            "conditional_vol": 0.036391383257632255
+          },
+          {
+            "date": "2024-11-26",
+            "realized_vol": 0.7430560673300062,
+            "conditional_vol": 0.03486971989810832
+          },
+          {
+            "date": "2024-12-03",
+            "realized_vol": 0.7744767406681132,
+            "conditional_vol": 0.0348189281509613
+          },
+          {
+            "date": "2024-12-10",
+            "realized_vol": 0.7279309955932937,
+            "conditional_vol": 0.04096194155157596
+          },
+          {
+            "date": "2024-12-17",
+            "realized_vol": 0.6905158978130003,
+            "conditional_vol": 0.03418175859012536
+          },
+          {
+            "date": "2024-12-24",
+            "realized_vol": 0.7174800256581587,
+            "conditional_vol": 0.037169219233894074
+          },
+          {
+            "date": "2024-12-31",
+            "realized_vol": 0.6367117878917666,
+            "conditional_vol": 0.03400325144476956
+          },
+          {
+            "date": "2025-01-07",
+            "realized_vol": 0.6732157880599953,
+            "conditional_vol": 0.03428047464746184
+          },
+          {
+            "date": "2025-01-14",
+            "realized_vol": 0.612731738791502,
+            "conditional_vol": 0.03603573618456659
+          },
+          {
+            "date": "2025-01-21",
+            "realized_vol": 0.6421375856754711,
+            "conditional_vol": 0.03654959759545457
+          },
+          {
+            "date": "2025-01-28",
+            "realized_vol": 0.6250121066821132,
+            "conditional_vol": 0.034440057021418995
+          },
+          {
+            "date": "2025-02-04",
+            "realized_vol": 0.7153265569289269,
+            "conditional_vol": 0.03959527809379777
+          },
+          {
+            "date": "2025-02-11",
+            "realized_vol": 0.6657579968922789,
+            "conditional_vol": 0.03405269786101778
+          },
+          {
+            "date": "2025-02-18",
+            "realized_vol": 0.5775717478646352,
+            "conditional_vol": 0.03499617971387164
+          },
+          {
+            "date": "2025-02-25",
+            "realized_vol": 0.7009993610932256,
+            "conditional_vol": 0.04927119539539703
+          },
+          {
+            "date": "2025-03-04",
+            "realized_vol": 0.9589294330921413,
+            "conditional_vol": 0.0662013657783263
+          },
+          {
+            "date": "2025-03-11",
+            "realized_vol": 1.0364616684436758,
+            "conditional_vol": 0.04662901787991517
+          },
+          {
+            "date": "2025-03-18",
+            "realized_vol": 1.0250929666383988,
+            "conditional_vol": 0.034946743499915556
+          },
+          {
+            "date": "2025-03-25",
+            "realized_vol": 1.039294738297443,
+            "conditional_vol": 0.035605729758582866
+          },
+          {
+            "date": "2025-04-01",
+            "realized_vol": 0.857035942930237,
+            "conditional_vol": 0.03481670245394731
+          },
+          {
+            "date": "2025-04-08",
+            "realized_vol": 0.7621996304170255,
+            "conditional_vol": 0.04550559807997469
+          },
+          {
+            "date": "2025-04-15",
+            "realized_vol": 0.9219322882953838,
+            "conditional_vol": 0.03739967847070572
+          },
+          {
+            "date": "2025-04-22",
+            "realized_vol": 0.9636536782379757,
+            "conditional_vol": 0.03373933989310591
+          },
+          {
+            "date": "2025-04-29",
+            "realized_vol": 0.9332596599355178,
+            "conditional_vol": 0.034160990544813925
+          },
+          {
+            "date": "2025-05-06",
+            "realized_vol": 0.7549542979310886,
+            "conditional_vol": 0.03364006459351317
+          },
+          {
+            "date": "2025-05-13",
+            "realized_vol": 0.8959919698084341,
+            "conditional_vol": 0.04191972234290062
+          },
+          {
+            "date": "2025-05-20",
+            "realized_vol": 0.9144445862433296,
+            "conditional_vol": 0.03425529859392025
+          },
+          {
+            "date": "2025-05-27",
+            "realized_vol": 0.8826490628793443,
+            "conditional_vol": 0.03426407494568966
+          },
+          {
+            "date": "2025-06-03",
+            "realized_vol": 0.9024061311648282,
+            "conditional_vol": 0.03482617696103694
+          },
+          {
+            "date": "2025-06-10",
+            "realized_vol": 0.6088432297669366,
+            "conditional_vol": 0.03977882315560954
+          },
+          {
+            "date": "2025-06-17",
+            "realized_vol": 0.5754199326969395,
+            "conditional_vol": 0.03408143310279127
+          },
+          {
+            "date": "2025-06-24",
+            "realized_vol": 0.6499716052523711,
+            "conditional_vol": 0.04353341305728706
+          },
+          {
+            "date": "2025-07-01",
+            "realized_vol": 0.635164064667835,
+            "conditional_vol": 0.034068967997441094
+          },
+          {
+            "date": "2025-07-08",
+            "realized_vol": 0.6272678546152181,
+            "conditional_vol": 0.034399219706323994
+          },
+          {
+            "date": "2025-07-15",
+            "realized_vol": 0.6077840495715521,
+            "conditional_vol": 0.03439907372673454
+          },
+          {
+            "date": "2025-07-22",
+            "realized_vol": 0.5608160113233911,
+            "conditional_vol": 0.03543212260043856
+          },
+          {
+            "date": "2025-07-29",
+            "realized_vol": 0.5453458079949317,
+            "conditional_vol": 0.03511788279359009
+          },
+          {
+            "date": "2025-08-05",
+            "realized_vol": 0.6045093398390542,
+            "conditional_vol": 0.039830045443324004
+          },
+          {
+            "date": "2025-08-12",
+            "realized_vol": 0.6480936455188391,
+            "conditional_vol": 0.03554725545626556
+          },
+          {
+            "date": "2025-08-19",
+            "realized_vol": 0.6872594854656555,
+            "conditional_vol": 0.0358986074546658
+          },
+          {
+            "date": "2025-08-26",
+            "realized_vol": 0.9197268197380057,
+            "conditional_vol": 0.04627295356533547
+          },
+          {
+            "date": "2025-09-02",
+            "realized_vol": 0.8839693540778204,
+            "conditional_vol": 0.03432077477441482
+          },
+          {
+            "date": "2025-09-09",
+            "realized_vol": 0.8141403230576592,
+            "conditional_vol": 0.033617205717892604
+          },
+          {
+            "date": "2025-09-16",
+            "realized_vol": 0.7630705277010085,
+            "conditional_vol": 0.034686540762812273
+          },
+          {
+            "date": "2025-09-23",
+            "realized_vol": 0.5355085098128881,
+            "conditional_vol": 0.03786850163162658
+          },
+          {
+            "date": "2025-09-30",
+            "realized_vol": 0.49743537247954467,
+            "conditional_vol": 0.03546649175809755
+          },
+          {
+            "date": "2025-10-07",
+            "realized_vol": 0.5584112321535825,
+            "conditional_vol": 0.03557148880737027
+          },
+          {
+            "date": "2025-10-14",
+            "realized_vol": 0.8020125003278739,
+            "conditional_vol": 0.0443233888413398
+          },
+          {
+            "date": "2025-10-21",
+            "realized_vol": 0.8156932064482988,
+            "conditional_vol": 0.03424355431294537
+          },
+          {
+            "date": "2025-10-28",
+            "realized_vol": 0.7689013983410662,
+            "conditional_vol": 0.03547259663378548
+          },
+          {
+            "date": "2025-11-04",
+            "realized_vol": 0.8384454542929326,
+            "conditional_vol": 0.04194324675006001
+          },
+          {
+            "date": "2025-11-11",
+            "realized_vol": 0.6444315169768565,
+            "conditional_vol": 0.036236577360162905
+          },
+          {
+            "date": "2025-11-18",
+            "realized_vol": 0.6680007074221468,
+            "conditional_vol": 0.03536367195845267
+          },
+          {
+            "date": "2025-11-25",
+            "realized_vol": 0.6935217334587177,
+            "conditional_vol": 0.03775346829752908
+          },
+          {
+            "date": "2025-12-02",
+            "realized_vol": 0.7690387882604965,
+            "conditional_vol": 0.03914502443754418
+          },
+          {
+            "date": "2025-12-09",
+            "realized_vol": 0.684102712623729,
+            "conditional_vol": 0.034755190762344096
+          },
+          {
+            "date": "2025-12-16",
+            "realized_vol": 0.6574585648589454,
+            "conditional_vol": 0.035715621785804154
+          },
+          {
+            "date": "2025-12-23",
+            "realized_vol": 0.6327883615032855,
+            "conditional_vol": 0.034138962938163424
+          },
+          {
+            "date": "2025-12-30",
+            "realized_vol": 0.6032483137734159,
+            "conditional_vol": 0.03346207678902879
+          },
+          {
+            "date": "2026-01-06",
+            "realized_vol": 0.46334277012591324,
+            "conditional_vol": 0.03471809399530451
+          },
+          {
+            "date": "2026-01-13",
+            "realized_vol": 0.4594762497802218,
+            "conditional_vol": 0.033743537017835924
+          },
+          {
+            "date": "2026-01-20",
+            "realized_vol": 0.4893332579113631,
+            "conditional_vol": 0.03477721998864288
+          },
+          {
+            "date": "2026-01-27",
+            "realized_vol": 0.5428808584088568,
+            "conditional_vol": 0.03706746841467214
+          },
+          {
+            "date": "2026-02-03",
+            "realized_vol": 0.7346616523489076,
+            "conditional_vol": 0.042751807955155756
+          },
+          {
+            "date": "2026-02-10",
+            "realized_vol": 1.019085429699288,
+            "conditional_vol": 0.03962510388726407
+          },
+          {
+            "date": "2026-02-17",
+            "realized_vol": 1.0235462206749542,
+            "conditional_vol": 0.03706153014691842
+          },
+          {
+            "date": "2026-02-24",
+            "realized_vol": 0.9979218868943552,
+            "conditional_vol": 0.037281667103329114
+          },
+          {
+            "date": "2026-03-03",
+            "realized_vol": 0.9804183767892116,
+            "conditional_vol": 0.0373680050519463
+          },
+          {
+            "date": "2026-03-10",
+            "realized_vol": 0.6996941080651591,
+            "conditional_vol": 0.03555238046971464
+          },
+          {
+            "date": "2026-03-17",
+            "realized_vol": 0.6734730115645088,
+            "conditional_vol": 0.041658824318509334
+          },
+          {
+            "date": "2026-03-24",
+            "realized_vol": 0.7335773327258674,
+            "conditional_vol": 0.037162703080257146
+          },
+          {
+            "date": "2026-03-31",
+            "realized_vol": 0.6351588817208131,
+            "conditional_vol": 0.034536377155943154
+          },
+          {
+            "date": "2026-04-07",
+            "realized_vol": 0.5846560582563173,
+            "conditional_vol": 0.03394754771058814
+          },
+          {
+            "date": "2026-04-08",
+            "realized_vol": 0.5826185801189439,
+            "conditional_vol": 0.038560906012869454
+          }
+        ],
+        "forecast_series": [
+          {
+            "date": "2026-04-09",
+            "forecast_vol": 0.036577
+          },
+          {
+            "date": "2026-04-10",
+            "forecast_vol": 0.036847
+          },
+          {
+            "date": "2026-04-11",
+            "forecast_vol": 0.037016
+          },
+          {
+            "date": "2026-04-12",
+            "forecast_vol": 0.037122
+          },
+          {
+            "date": "2026-04-13",
+            "forecast_vol": 0.037189
+          },
+          {
+            "date": "2026-04-14",
+            "forecast_vol": 0.03723
+          },
+          {
+            "date": "2026-04-15",
+            "forecast_vol": 0.037257
+          },
+          {
+            "date": "2026-04-16",
+            "forecast_vol": 0.037273
+          },
+          {
+            "date": "2026-04-17",
+            "forecast_vol": 0.037284
+          },
+          {
+            "date": "2026-04-18",
+            "forecast_vol": 0.03729
+          }
+        ],
+        "overlay_series": [
+          {
+            "date": "2024-12-17",
+            "strategy_curve": -0.0152,
+            "benchmark_curve": -0.0256,
+            "position": 0.573
+          },
+          {
+            "date": "2024-12-23",
+            "strategy_curve": -0.0835,
+            "benchmark_curve": -0.149,
+            "position": 0.5382
+          },
+          {
+            "date": "2024-12-29",
+            "strategy_curve": -0.0946,
+            "benchmark_curve": -0.167,
+            "position": 0.5576
+          },
+          {
+            "date": "2025-01-04",
+            "strategy_curve": -0.0485,
+            "benchmark_curve": -0.0917,
+            "position": 0.5497
+          },
+          {
+            "date": "2025-01-10",
+            "strategy_curve": -0.1074,
+            "benchmark_curve": -0.1926,
+            "position": 0.5237
+          },
+          {
+            "date": "2025-01-16",
+            "strategy_curve": -0.1018,
+            "benchmark_curve": -0.1861,
+            "position": 0.5106
+          },
+          {
+            "date": "2025-01-22",
+            "strategy_curve": -0.1126,
+            "benchmark_curve": -0.2057,
+            "position": 0.5433
+          },
+          {
+            "date": "2025-01-28",
+            "strategy_curve": -0.1385,
+            "benchmark_curve": -0.2467,
+            "position": 0.5206
+          },
+          {
+            "date": "2025-02-03",
+            "strategy_curve": -0.1686,
+            "benchmark_curve": -0.2984,
+            "position": 0.5143
+          },
+          {
+            "date": "2025-02-09",
+            "strategy_curve": -0.2082,
+            "benchmark_curve": -0.3623,
+            "position": 0.5224
+          },
+          {
+            "date": "2025-02-15",
+            "strategy_curve": -0.1976,
+            "benchmark_curve": -0.3479,
+            "position": 0.5639
+          },
+          {
+            "date": "2025-02-21",
+            "strategy_curve": -0.2039,
+            "benchmark_curve": -0.3571,
+            "position": 0.5852
+          },
+          {
+            "date": "2025-02-27",
+            "strategy_curve": -0.2616,
+            "benchmark_curve": -0.4486,
+            "position": 0.4531
+          },
+          {
+            "date": "2025-03-05",
+            "strategy_curve": -0.2686,
+            "benchmark_curve": -0.476,
+            "position": 0.3132
+          },
+          {
+            "date": "2025-03-11",
+            "strategy_curve": -0.3197,
+            "benchmark_curve": -0.5553,
+            "position": 0.3709
+          },
+          {
+            "date": "2025-03-17",
+            "strategy_curve": -0.3181,
+            "benchmark_curve": -0.5542,
+            "position": 0.5202
+          },
+          {
+            "date": "2025-03-23",
+            "strategy_curve": -0.3019,
+            "benchmark_curve": -0.5374,
+            "position": 0.5264
+          },
+          {
+            "date": "2025-03-29",
+            "strategy_curve": -0.3358,
+            "benchmark_curve": -0.5799,
+            "position": 0.4898
+          },
+          {
+            "date": "2025-04-04",
+            "strategy_curve": -0.3379,
+            "benchmark_curve": -0.5838,
+            "position": 0.4926
+          },
+          {
+            "date": "2025-04-10",
+            "strategy_curve": -0.3926,
+            "benchmark_curve": -0.6591,
+            "position": 0.3369
+          },
+          {
+            "date": "2025-04-16",
+            "strategy_curve": -0.3871,
+            "benchmark_curve": -0.6474,
+            "position": 0.4601
+          },
+          {
+            "date": "2025-04-22",
+            "strategy_curve": -0.3514,
+            "benchmark_curve": -0.6096,
+            "position": 0.5433
+          },
+          {
+            "date": "2025-04-28",
+            "strategy_curve": -0.3454,
+            "benchmark_curve": -0.6006,
+            "position": 0.5062
+          },
+          {
+            "date": "2025-05-04",
+            "strategy_curve": -0.3438,
+            "benchmark_curve": -0.5986,
+            "position": 0.5156
+          },
+          {
+            "date": "2025-05-10",
+            "strategy_curve": -0.2266,
+            "benchmark_curve": -0.4401,
+            "position": 0.3827
+          },
+          {
+            "date": "2025-05-16",
+            "strategy_curve": -0.2321,
+            "benchmark_curve": -0.4521,
+            "position": 0.371
+          },
+          {
+            "date": "2025-05-22",
+            "strategy_curve": -0.2183,
+            "benchmark_curve": -0.4252,
+            "position": 0.3648
+          },
+          {
+            "date": "2025-05-28",
+            "strategy_curve": -0.2164,
+            "benchmark_curve": -0.4226,
+            "position": 0.3721
+          },
+          {
+            "date": "2025-06-03",
+            "strategy_curve": -0.2263,
+            "benchmark_curve": -0.4425,
+            "position": 0.3926
+          },
+          {
+            "date": "2025-06-09",
+            "strategy_curve": -0.217,
+            "benchmark_curve": -0.4268,
+            "position": 0.4816
+          },
+          {
+            "date": "2025-06-15",
+            "strategy_curve": -0.2348,
+            "benchmark_curve": -0.4572,
+            "position": 0.4735
+          },
+          {
+            "date": "2025-06-21",
+            "strategy_curve": -0.2709,
+            "benchmark_curve": -0.5108,
+            "position": 0.4541
+          },
+          {
+            "date": "2025-06-27",
+            "strategy_curve": -0.254,
+            "benchmark_curve": -0.4866,
+            "position": 0.4756
+          },
+          {
+            "date": "2025-07-03",
+            "strategy_curve": -0.2315,
+            "benchmark_curve": -0.4528,
+            "position": 0.4232
+          },
+          {
+            "date": "2025-07-09",
+            "strategy_curve": -0.2073,
+            "benchmark_curve": -0.4165,
+            "position": 0.4655
+          },
+          {
+            "date": "2025-07-15",
+            "strategy_curve": -0.1618,
+            "benchmark_curve": -0.3408,
+            "position": 0.474
+          },
+          {
+            "date": "2025-07-21",
+            "strategy_curve": -0.0904,
+            "benchmark_curve": -0.2131,
+            "position": 0.4534
+          },
+          {
+            "date": "2025-07-27",
+            "strategy_curve": -0.0781,
+            "benchmark_curve": -0.1909,
+            "position": 0.4863
+          },
+          {
+            "date": "2025-08-02",
+            "strategy_curve": -0.1347,
+            "benchmark_curve": -0.2936,
+            "position": 0.4381
+          },
+          {
+            "date": "2025-08-08",
+            "strategy_curve": -0.064,
+            "benchmark_curve": -0.1693,
+            "position": 0.4359
+          },
+          {
+            "date": "2025-08-14",
+            "strategy_curve": -0.0086,
+            "benchmark_curve": -0.064,
+            "position": 0.4496
+          },
+          {
+            "date": "2025-08-20",
+            "strategy_curve": -0.0337,
+            "benchmark_curve": -0.1121,
+            "position": 0.4355
+          },
+          {
+            "date": "2025-08-26",
+            "strategy_curve": -0.0109,
+            "benchmark_curve": -0.0709,
+            "position": 0.3864
+          },
+          {
+            "date": "2025-09-01",
+            "strategy_curve": -0.0394,
+            "benchmark_curve": -0.1295,
+            "position": 0.4784
+          },
+          {
+            "date": "2025-09-07",
+            "strategy_curve": -0.0403,
+            "benchmark_curve": -0.1322,
+            "position": 0.4804
+          },
+          {
+            "date": "2025-09-13",
+            "strategy_curve": -0.0025,
+            "benchmark_curve": -0.0609,
+            "position": 0.4393
+          },
+          {
+            "date": "2025-09-19",
+            "strategy_curve": -0.023,
+            "benchmark_curve": -0.1013,
+            "position": 0.4914
+          },
+          {
+            "date": "2025-09-25",
+            "strategy_curve": -0.0905,
+            "benchmark_curve": -0.2259,
+            "position": 0.4867
+          },
+          {
+            "date": "2025-10-01",
+            "strategy_curve": -0.0409,
+            "benchmark_curve": -0.1317,
+            "position": 0.4834
+          },
+          {
+            "date": "2025-10-07",
+            "strategy_curve": -0.0309,
+            "benchmark_curve": -0.114,
+            "position": 0.4697
+          },
+          {
+            "date": "2025-10-13",
+            "strategy_curve": -0.0611,
+            "benchmark_curve": -0.1679,
+            "position": 0.3438
+          },
+          {
+            "date": "2025-10-19",
+            "strategy_curve": -0.0852,
+            "benchmark_curve": -0.2204,
+            "position": 0.4736
+          },
+          {
+            "date": "2025-10-25",
+            "strategy_curve": -0.0887,
+            "benchmark_curve": -0.2271,
+            "position": 0.4757
+          },
+          {
+            "date": "2025-10-31",
+            "strategy_curve": -0.0998,
+            "benchmark_curve": -0.2498,
+            "position": 0.4711
+          },
+          {
+            "date": "2025-11-06",
+            "strategy_curve": -0.1612,
+            "benchmark_curve": -0.36,
+            "position": 0.4066
+          },
+          {
+            "date": "2025-11-12",
+            "strategy_curve": -0.1511,
+            "benchmark_curve": -0.3425,
+            "position": 0.4672
+          },
+          {
+            "date": "2025-11-18",
+            "strategy_curve": -0.1868,
+            "benchmark_curve": -0.4006,
+            "position": 0.4889
+          },
+          {
+            "date": "2025-11-24",
+            "strategy_curve": -0.2085,
+            "benchmark_curve": -0.4358,
+            "position": 0.4895
+          },
+          {
+            "date": "2025-11-30",
+            "strategy_curve": -0.2037,
+            "benchmark_curve": -0.4285,
+            "position": 0.4978
+          },
+          {
+            "date": "2025-12-06",
+            "strategy_curve": -0.2023,
+            "benchmark_curve": -0.4235,
+            "position": 0.4641
+          },
+          {
+            "date": "2025-12-12",
+            "strategy_curve": -0.1976,
+            "benchmark_curve": -0.4173,
+            "position": 0.5037
+          },
+          {
+            "date": "2025-12-18",
+            "strategy_curve": -0.2323,
+            "benchmark_curve": -0.4668,
+            "position": 0.4915
+          },
+          {
+            "date": "2025-12-24",
+            "strategy_curve": -0.2167,
+            "benchmark_curve": -0.4453,
+            "position": 0.5123
+          },
+          {
+            "date": "2025-12-30",
+            "strategy_curve": -0.2131,
+            "benchmark_curve": -0.4406,
+            "position": 0.5303
+          },
+          {
+            "date": "2026-01-05",
+            "strategy_curve": -0.1782,
+            "benchmark_curve": -0.3933,
+            "position": 0.5292
+          },
+          {
+            "date": "2026-01-11",
+            "strategy_curve": -0.1929,
+            "benchmark_curve": -0.4143,
+            "position": 0.5501
+          },
+          {
+            "date": "2026-01-17",
+            "strategy_curve": -0.1648,
+            "benchmark_curve": -0.3802,
+            "position": 0.5772
+          },
+          {
+            "date": "2026-01-23",
+            "strategy_curve": -0.2212,
+            "benchmark_curve": -0.4492,
+            "position": 0.5366
+          },
+          {
+            "date": "2026-01-29",
+            "strategy_curve": -0.2449,
+            "benchmark_curve": -0.4767,
+            "position": 0.5606
+          },
+          {
+            "date": "2026-02-04",
+            "strategy_curve": -0.3344,
+            "benchmark_curve": -0.6067,
+            "position": 0.4329
+          },
+          {
+            "date": "2026-02-10",
+            "strategy_curve": -0.3735,
+            "benchmark_curve": -0.6379,
+            "position": 0.4018
+          },
+          {
+            "date": "2026-02-16",
+            "strategy_curve": -0.3768,
+            "benchmark_curve": -0.6433,
+            "position": 0.4334
+          },
+          {
+            "date": "2026-02-22",
+            "strategy_curve": -0.3836,
+            "benchmark_curve": -0.6505,
+            "position": 0.6233
+          },
+          {
+            "date": "2026-02-28",
+            "strategy_curve": -0.3825,
+            "benchmark_curve": -0.652,
+            "position": 0.4116
+          },
+          {
+            "date": "2026-03-06",
+            "strategy_curve": -0.3774,
+            "benchmark_curve": -0.6514,
+            "position": 0.4537
+          },
+          {
+            "date": "2026-03-12",
+            "strategy_curve": -0.3614,
+            "benchmark_curve": -0.635,
+            "position": 0.5662
+          },
+          {
+            "date": "2026-03-18",
+            "strategy_curve": -0.3348,
+            "benchmark_curve": -0.614,
+            "position": 0.4597
+          },
+          {
+            "date": "2026-03-24",
+            "strategy_curve": -0.3405,
+            "benchmark_curve": -0.6232,
+            "position": 0.4889
+          },
+          {
+            "date": "2026-03-30",
+            "strategy_curve": -0.3626,
+            "benchmark_curve": -0.6471,
+            "position": 0.5626
+          },
+          {
+            "date": "2026-04-05",
+            "strategy_curve": -0.3479,
+            "benchmark_curve": -0.6329,
+            "position": 0.5702
+          },
+          {
+            "date": "2026-04-08",
+            "strategy_curve": -0.3297,
+            "benchmark_curve": -0.6168,
+            "position": 0.4697
+          }
+        ]
+      }
+    ]
+  },
+  "factor": {
+    "metadata": {
+      "start_date": "2020-01-02",
+      "end_date": "2026-04-07",
+      "backtest_universe_size": 12,
+      "screening_universe_size": 24,
+      "transaction_cost_bps": 10
+    },
+    "metrics": {
+      "total_return": 0.6789750131110677,
+      "sharpe_ratio": 0.6236548153117333,
+      "mean_information_coefficient": 0.12902097902097903,
+      "holdout_accuracy": 0.5494791666666666,
+      "holdout_roc_auc": 0.5368869237697536
+    },
+    "performance_series": [
+      {
+        "date": "2021-01-04",
+        "strategy_curve": -0.0008,
+        "benchmark_curve": -0.0082
+      },
+      {
+        "date": "2021-01-20",
+        "strategy_curve": -0.0515,
+        "benchmark_curve": 0.0524
+      },
+      {
+        "date": "2021-02-04",
+        "strategy_curve": -0.0409,
+        "benchmark_curve": 0.0653
+      },
+      {
+        "date": "2021-02-22",
+        "strategy_curve": -0.0816,
+        "benchmark_curve": 0.089
+      },
+      {
+        "date": "2021-03-09",
+        "strategy_curve": -0.1456,
+        "benchmark_curve": 0.0999
+      },
+      {
+        "date": "2021-03-24",
+        "strategy_curve": -0.1056,
+        "benchmark_curve": 0.1119
+      },
+      {
+        "date": "2021-04-09",
+        "strategy_curve": -0.0615,
+        "benchmark_curve": 0.1837
+      },
+      {
+        "date": "2021-04-26",
+        "strategy_curve": -0.0426,
+        "benchmark_curve": 0.1986
+      },
+      {
+        "date": "2021-05-11",
+        "strategy_curve": -0.0585,
+        "benchmark_curve": 0.2036
+      },
+      {
+        "date": "2021-05-26",
+        "strategy_curve": -0.0582,
+        "benchmark_curve": 0.2276
+      },
+      {
+        "date": "2021-06-11",
+        "strategy_curve": -0.0485,
+        "benchmark_curve": 0.2564
+      },
+      {
+        "date": "2021-06-28",
+        "strategy_curve": -0.0606,
+        "benchmark_curve": 0.2849
+      },
+      {
+        "date": "2021-07-14",
+        "strategy_curve": -0.0606,
+        "benchmark_curve": 0.3108
+      },
+      {
+        "date": "2021-07-29",
+        "strategy_curve": -0.0553,
+        "benchmark_curve": 0.3181
+      },
+      {
+        "date": "2021-08-13",
+        "strategy_curve": -0.0101,
+        "benchmark_curve": 0.3321
+      },
+      {
+        "date": "2021-08-30",
+        "strategy_curve": -0.0467,
+        "benchmark_curve": 0.3649
+      },
+      {
+        "date": "2021-09-15",
+        "strategy_curve": -0.0561,
+        "benchmark_curve": 0.3617
+      },
+      {
+        "date": "2021-09-30",
+        "strategy_curve": -0.0313,
+        "benchmark_curve": 0.3103
+      },
+      {
+        "date": "2021-10-15",
+        "strategy_curve": -0.0225,
+        "benchmark_curve": 0.3776
+      },
+      {
+        "date": "2021-11-01",
+        "strategy_curve": -0.0165,
+        "benchmark_curve": 0.4401
+      },
+      {
+        "date": "2021-11-16",
+        "strategy_curve": -0.0392,
+        "benchmark_curve": 0.4859
+      },
+      {
+        "date": "2021-12-02",
+        "strategy_curve": -0.0468,
+        "benchmark_curve": 0.4709
+      },
+      {
+        "date": "2021-12-17",
+        "strategy_curve": -0.0465,
+        "benchmark_curve": 0.4607
+      },
+      {
+        "date": "2022-01-04",
+        "strategy_curve": -0.0417,
+        "benchmark_curve": 0.523
+      },
+      {
+        "date": "2022-01-20",
+        "strategy_curve": -0.0771,
+        "benchmark_curve": 0.409
+      },
+      {
+        "date": "2022-02-04",
+        "strategy_curve": -0.0085,
+        "benchmark_curve": 0.4416
+      },
+      {
+        "date": "2022-02-22",
+        "strategy_curve": 0.0097,
+        "benchmark_curve": 0.3551
+      },
+      {
+        "date": "2022-03-09",
+        "strategy_curve": 0.0056,
+        "benchmark_curve": 0.3725
+      },
+      {
+        "date": "2022-03-24",
+        "strategy_curve": 0.0333,
+        "benchmark_curve": 0.4661
+      },
+      {
+        "date": "2022-04-08",
+        "strategy_curve": 0.0465,
+        "benchmark_curve": 0.4279
+      },
+      {
+        "date": "2022-04-26",
+        "strategy_curve": 0.0894,
+        "benchmark_curve": 0.2993
+      },
+      {
+        "date": "2022-05-11",
+        "strategy_curve": 0.1725,
+        "benchmark_curve": 0.2394
+      },
+      {
+        "date": "2022-05-26",
+        "strategy_curve": 0.2089,
+        "benchmark_curve": 0.3004
+      },
+      {
+        "date": "2022-06-13",
+        "strategy_curve": 0.2536,
+        "benchmark_curve": 0.2007
+      },
+      {
+        "date": "2022-06-29",
+        "strategy_curve": 0.1703,
+        "benchmark_curve": 0.2163
+      },
+      {
+        "date": "2022-07-15",
+        "strategy_curve": 0.1243,
+        "benchmark_curve": 0.2244
+      },
+      {
+        "date": "2022-08-01",
+        "strategy_curve": 0.1532,
+        "benchmark_curve": 0.3267
+      },
+      {
+        "date": "2022-08-16",
+        "strategy_curve": 0.0861,
+        "benchmark_curve": 0.393
+      },
+      {
+        "date": "2022-08-31",
+        "strategy_curve": 0.1665,
+        "benchmark_curve": 0.2803
+      },
+      {
+        "date": "2022-09-16",
+        "strategy_curve": 0.1922,
+        "benchmark_curve": 0.2306
+      },
+      {
+        "date": "2022-10-03",
+        "strategy_curve": 0.2145,
+        "benchmark_curve": 0.1832
+      },
+      {
+        "date": "2022-10-18",
+        "strategy_curve": 0.2884,
+        "benchmark_curve": 0.2118
+      },
+      {
+        "date": "2022-11-02",
+        "strategy_curve": 0.4253,
+        "benchmark_curve": 0.1847
+      },
+      {
+        "date": "2022-11-17",
+        "strategy_curve": 0.3125,
+        "benchmark_curve": 0.279
+      },
+      {
+        "date": "2022-12-05",
+        "strategy_curve": 0.2296,
+        "benchmark_curve": 0.2888
+      },
+      {
+        "date": "2022-12-20",
+        "strategy_curve": 0.2424,
+        "benchmark_curve": 0.2332
+      },
+      {
+        "date": "2023-01-06",
+        "strategy_curve": 0.259,
+        "benchmark_curve": 0.235
+      },
+      {
+        "date": "2023-01-24",
+        "strategy_curve": 0.2093,
+        "benchmark_curve": 0.3232
+      },
+      {
+        "date": "2023-02-08",
+        "strategy_curve": 0.095,
+        "benchmark_curve": 0.4013
+      },
+      {
+        "date": "2023-02-24",
+        "strategy_curve": 0.1173,
+        "benchmark_curve": 0.3489
+      },
+      {
+        "date": "2023-03-13",
+        "strategy_curve": 0.0858,
+        "benchmark_curve": 0.3238
+      },
+      {
+        "date": "2023-03-28",
+        "strategy_curve": 0.0456,
+        "benchmark_curve": 0.385
+      },
+      {
+        "date": "2023-04-13",
+        "strategy_curve": 0.0447,
+        "benchmark_curve": 0.4647
+      },
+      {
+        "date": "2023-04-28",
+        "strategy_curve": 0.0346,
+        "benchmark_curve": 0.5057
+      },
+      {
+        "date": "2023-05-15",
+        "strategy_curve": -0.0109,
+        "benchmark_curve": 0.4915
+      },
+      {
+        "date": "2023-05-31",
+        "strategy_curve": -0.0617,
+        "benchmark_curve": 0.5648
+      },
+      {
+        "date": "2023-06-15",
+        "strategy_curve": -0.069,
+        "benchmark_curve": 0.6426
+      },
+      {
+        "date": "2023-07-03",
+        "strategy_curve": -0.07,
+        "benchmark_curve": 0.6495
+      },
+      {
+        "date": "2023-07-19",
+        "strategy_curve": -0.0883,
+        "benchmark_curve": 0.7122
+      },
+      {
+        "date": "2023-08-03",
+        "strategy_curve": -0.0849,
+        "benchmark_curve": 0.7144
+      },
+      {
+        "date": "2023-08-18",
+        "strategy_curve": -0.0891,
+        "benchmark_curve": 0.6708
+      },
+      {
+        "date": "2023-09-05",
+        "strategy_curve": -0.0632,
+        "benchmark_curve": 0.7313
+      },
+      {
+        "date": "2023-09-20",
+        "strategy_curve": -0.0742,
+        "benchmark_curve": 0.7003
+      },
+      {
+        "date": "2023-10-05",
+        "strategy_curve": -0.0464,
+        "benchmark_curve": 0.6728
+      },
+      {
+        "date": "2023-10-20",
+        "strategy_curve": -0.0741,
+        "benchmark_curve": 0.6672
+      },
+      {
+        "date": "2023-11-06",
+        "strategy_curve": -0.0376,
+        "benchmark_curve": 0.7078
+      },
+      {
+        "date": "2023-11-21",
+        "strategy_curve": -0.0222,
+        "benchmark_curve": 0.7769
+      },
+      {
+        "date": "2023-12-07",
+        "strategy_curve": -0.0263,
+        "benchmark_curve": 0.7803
+      },
+      {
+        "date": "2023-12-22",
+        "strategy_curve": 0.0067,
+        "benchmark_curve": 0.8545
+      },
+      {
+        "date": "2024-01-10",
+        "strategy_curve": 0.0398,
+        "benchmark_curve": 0.88
+      },
+      {
+        "date": "2024-01-26",
+        "strategy_curve": 0.0738,
+        "benchmark_curve": 0.9397
+      },
+      {
+        "date": "2024-02-12",
+        "strategy_curve": 0.097,
+        "benchmark_curve": 1.0317
+      },
+      {
+        "date": "2024-02-28",
+        "strategy_curve": 0.1047,
+        "benchmark_curve": 1.046
+      },
+      {
+        "date": "2024-03-14",
+        "strategy_curve": 0.125,
+        "benchmark_curve": 1.0997
+      },
+      {
+        "date": "2024-04-01",
+        "strategy_curve": 0.1042,
+        "benchmark_curve": 1.1498
+      },
+      {
+        "date": "2024-04-16",
+        "strategy_curve": 0.0773,
+        "benchmark_curve": 1.0973
+      },
+      {
+        "date": "2024-05-01",
+        "strategy_curve": 0.0523,
+        "benchmark_curve": 1.0954
+      },
+      {
+        "date": "2024-05-16",
+        "strategy_curve": 0.0727,
+        "benchmark_curve": 1.2333
+      },
+      {
+        "date": "2024-06-03",
+        "strategy_curve": 0.1282,
+        "benchmark_curve": 1.2405
+      },
+      {
+        "date": "2024-06-18",
+        "strategy_curve": 0.2085,
+        "benchmark_curve": 1.3147
+      },
+      {
+        "date": "2024-07-05",
+        "strategy_curve": 0.1359,
+        "benchmark_curve": 1.3853
+      },
+      {
+        "date": "2024-07-22",
+        "strategy_curve": 0.1733,
+        "benchmark_curve": 1.3893
+      },
+      {
+        "date": "2024-08-06",
+        "strategy_curve": 0.1701,
+        "benchmark_curve": 1.2431
+      },
+      {
+        "date": "2024-08-21",
+        "strategy_curve": 0.2054,
+        "benchmark_curve": 1.4018
+      },
+      {
+        "date": "2024-09-06",
+        "strategy_curve": 0.157,
+        "benchmark_curve": 1.287
+      },
+      {
+        "date": "2024-09-23",
+        "strategy_curve": 0.175,
+        "benchmark_curve": 1.4319
+      },
+      {
+        "date": "2024-10-08",
+        "strategy_curve": 0.2163,
+        "benchmark_curve": 1.4769
+      },
+      {
+        "date": "2024-10-23",
+        "strategy_curve": 0.2476,
+        "benchmark_curve": 1.4948
+      },
+      {
+        "date": "2024-11-07",
+        "strategy_curve": 0.2904,
+        "benchmark_curve": 1.6336
+      },
+      {
+        "date": "2024-11-22",
+        "strategy_curve": 0.2988,
+        "benchmark_curve": 1.6152
+      },
+      {
+        "date": "2024-12-10",
+        "strategy_curve": 0.3189,
+        "benchmark_curve": 1.6736
+      },
+      {
+        "date": "2024-12-26",
+        "strategy_curve": 0.3651,
+        "benchmark_curve": 1.6303
+      },
+      {
+        "date": "2025-01-14",
+        "strategy_curve": 0.3392,
+        "benchmark_curve": 1.6048
+      },
+      {
+        "date": "2025-01-30",
+        "strategy_curve": 0.3015,
+        "benchmark_curve": 1.7223
+      },
+      {
+        "date": "2025-02-14",
+        "strategy_curve": 0.3673,
+        "benchmark_curve": 1.7453
+      },
+      {
+        "date": "2025-03-04",
+        "strategy_curve": 0.3515,
+        "benchmark_curve": 1.5257
+      },
+      {
+        "date": "2025-03-19",
+        "strategy_curve": 0.3614,
+        "benchmark_curve": 1.4875
+      },
+      {
+        "date": "2025-04-03",
+        "strategy_curve": 0.3737,
+        "benchmark_curve": 1.3622
+      },
+      {
+        "date": "2025-04-21",
+        "strategy_curve": 0.5101,
+        "benchmark_curve": 1.2189
+      },
+      {
+        "date": "2025-05-06",
+        "strategy_curve": 0.5115,
+        "benchmark_curve": 1.3964
+      },
+      {
+        "date": "2025-05-21",
+        "strategy_curve": 0.6198,
+        "benchmark_curve": 1.4682
+      },
+      {
+        "date": "2025-06-06",
+        "strategy_curve": 0.6233,
+        "benchmark_curve": 1.5527
+      },
+      {
+        "date": "2025-06-24",
+        "strategy_curve": 0.6237,
+        "benchmark_curve": 1.6051
+      },
+      {
+        "date": "2025-07-10",
+        "strategy_curve": 0.6736,
+        "benchmark_curve": 1.7315
+      },
+      {
+        "date": "2025-07-25",
+        "strategy_curve": 0.69,
+        "benchmark_curve": 1.7702
+      },
+      {
+        "date": "2025-08-11",
+        "strategy_curve": 0.7115,
+        "benchmark_curve": 1.7806
+      },
+      {
+        "date": "2025-08-26",
+        "strategy_curve": 0.6685,
+        "benchmark_curve": 1.8811
+      },
+      {
+        "date": "2025-09-11",
+        "strategy_curve": 0.6368,
+        "benchmark_curve": 1.9877
+      },
+      {
+        "date": "2025-09-26",
+        "strategy_curve": 0.6422,
+        "benchmark_curve": 2.0308
+      },
+      {
+        "date": "2025-10-13",
+        "strategy_curve": 0.5853,
+        "benchmark_curve": 1.9849
+      },
+      {
+        "date": "2025-10-28",
+        "strategy_curve": 0.5424,
+        "benchmark_curve": 2.1041
+      },
+      {
+        "date": "2025-11-12",
+        "strategy_curve": 0.6084,
+        "benchmark_curve": 2.0724
+      },
+      {
+        "date": "2025-11-28",
+        "strategy_curve": 0.5962,
+        "benchmark_curve": 2.051
+      },
+      {
+        "date": "2025-12-15",
+        "strategy_curve": 0.6275,
+        "benchmark_curve": 2.0578
+      },
+      {
+        "date": "2025-12-31",
+        "strategy_curve": 0.6422,
+        "benchmark_curve": 2.0857
+      },
+      {
+        "date": "2026-01-08",
+        "strategy_curve": 0.679,
+        "benchmark_curve": 2.1564
+      }
+    ],
+    "factor_exposures": [
+      {
+        "factor": "Momentum 12-1",
+        "beta": 0.7273
+      },
+      {
+        "factor": "Short Term Reversal",
+        "beta": 0.4055
+      },
+      {
+        "factor": "Low Volatility",
+        "beta": 0.1753
+      },
+      {
+        "factor": "Market",
+        "beta": -0.0409
+      }
+    ],
+    "top_screen": [
+      {
+        "ticker": "NVDA",
+        "company": "NVIDIA Corporation",
+        "sector": "Technology",
+        "screen_rank": 1,
+        "screen_score": 0.631,
+        "probability": 50.7,
+        "price": 182.08,
+        "target": 268.22
+      },
+      {
+        "ticker": "GOOGL",
+        "company": "Alphabet Inc.",
+        "sector": "Communication Services",
+        "screen_rank": 2,
+        "screen_score": 0.542,
+        "probability": 50.6,
+        "price": 317.32,
+        "target": 376.29
+      },
+      {
+        "ticker": "CAT",
+        "company": "Caterpillar, Inc.",
+        "sector": "Industrials",
+        "screen_rank": 3,
+        "screen_score": 0.513,
+        "probability": 50.7,
+        "price": 771.55,
+        "target": 742.18
+      },
+      {
+        "ticker": "COP",
+        "company": "ConocoPhillips",
+        "sector": "Energy",
+        "screen_rank": 4,
+        "screen_score": 0.254,
+        "probability": 49.0,
+        "price": 125.22,
+        "target": 131.04
+      },
+      {
+        "ticker": "GS",
+        "company": "Goldman Sachs Group, Inc. (The)",
+        "sector": "Financial Services",
+        "screen_rank": 5,
+        "screen_score": 0.226,
+        "probability": 50.1,
+        "price": 905.54,
+        "target": 936.2
+      }
+    ],
+    "ideas": [
+      {
+        "ticker": "NVDA",
+        "thesis": "the name screens well because it combines positive price leadership with above-median operating quality and valuation support.",
+        "risk": "price volatility is above a typical large-cap profile."
+      },
+      {
+        "ticker": "GOOGL",
+        "thesis": "the signal is more tactical than deep value, with strength driven by the current factor mix rather than one single cheapness metric.",
+        "risk": "DCF support is limited at the current price."
+      },
+      {
+        "ticker": "CAT",
+        "thesis": "the signal is more tactical than deep value, with strength driven by the current factor mix rather than one single cheapness metric.",
+        "risk": "leverage is elevated."
+      }
+    ]
+  },
+  "options": {
+    "default_scenario": {
+      "spot": 100.0,
+      "strike": 100.0,
+      "rate": 0.03,
+      "volatility": 0.2,
+      "maturity": 1.0,
+      "option_type": "call"
+    },
+    "sample_output": {
+      "black_scholes_price": 9.4134,
+      "implied_volatility_pct": 20.0,
+      "monte_carlo_price": 9.4158,
+      "monte_carlo_error": 0.1241,
+      "american_tree_price": 9.4035,
+      "delta": 0.5987,
+      "gamma": 0.0193,
+      "vega": 0.3867,
+      "theta": -0.0147,
+      "rho": 0.5046
+    }
+  }
+}
+</script>
+<script type="module">
+const THEME = {
+  ink: "#0f1a24",
+  soft: "#243240",
+  teal: "#0c6a66",
+  copper: "#b5662a",
+  rose: "#9b3f34",
+  green: "#176548",
+  gold: "#8f6426",
+};
+
+const state = {
+  data: null,
+  selectedCrypto: "BTC-USD",
+  options: null,
+};
+
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
+const monthFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  year: "2-digit",
+});
+
+function formatDate(value) {
+  return dateFormatter.format(new Date(`${value}T00:00:00`));
+}
+
+function formatPercent(value, digits = 1) {
+  return `${(value * 100).toFixed(digits)}%`;
+}
+
+function formatSignedPercent(value, digits = 1) {
+  const prefix = value > 0 ? "+" : "";
+  return `${prefix}${(value * 100).toFixed(digits)}%`;
+}
+
+function formatNumber(value, digits = 2) {
+  return Number(value).toFixed(digits);
+}
+
+function formatSignedNumber(value, digits = 2) {
+  const prefix = value > 0 ? "+" : "";
+  return `${prefix}${Number(value).toFixed(digits)}`;
+}
+
+function formatCurrency(value, digits = 2) {
+  return `$${Number(value).toFixed(digits)}`;
+}
+
+function metricCard(label, value, detail) {
+  return `
+    <div class="metric-card">
+      <div class="metric-label">${label}</div>
+      <div class="metric-value">${value}</div>
+      <div class="metric-detail">${detail}</div>
+    </div>
+  `;
+}
+
+function niceTicks(min, max, count = 4) {
+  if (min === max) {
+    return [min];
+  }
+
+  const rawStep = Math.abs(max - min) / Math.max(count - 1, 1);
+  const magnitude = 10 ** Math.floor(Math.log10(rawStep));
+  const residual = rawStep / magnitude;
+
+  let niceStep = magnitude;
+  if (residual >= 5) {
+    niceStep = 5 * magnitude;
+  } else if (residual >= 2) {
+    niceStep = 2 * magnitude;
+  }
+
+  const tickMin = Math.floor(min / niceStep) * niceStep;
+  const tickMax = Math.ceil(max / niceStep) * niceStep;
+  const ticks = [];
+
+  for (let tick = tickMin; tick <= tickMax + niceStep * 0.5; tick += niceStep) {
+    ticks.push(Number(tick.toFixed(8)));
+  }
+
+  return ticks;
+}
+
+function normalizeSeries(series, xType) {
+  return series.map((item) => ({
+    ...item,
+    points: item.points.map((point) => ({
+      rawX: point.x,
+      x:
+        xType === "date"
+          ? new Date(`${point.x}T00:00:00`).getTime()
+          : Number(point.x),
+      y: point.y == null || Number.isNaN(point.y) ? null : Number(point.y),
+    })),
+  }));
+}
+
+function buildLinePath(points, xScale, yScale) {
+  let path = "";
+  let open = false;
+  for (const point of points) {
+    if (point.y == null) {
+      open = false;
+      continue;
+    }
+    const x = xScale(point.x);
+    const y = yScale(point.y);
+    path += `${open ? "L" : "M"}${x.toFixed(2)},${y.toFixed(2)}`;
+    open = true;
+  }
+  return path;
+}
+
+function buildAreaPath(points, xScale, yScale, baseline) {
+  const filtered = points.filter((point) => point.y != null);
+  if (!filtered.length) {
+    return "";
+  }
+
+  const top = filtered
+    .map((point, index) => `${index === 0 ? "M" : "L"}${xScale(point.x).toFixed(2)},${yScale(point.y).toFixed(2)}`)
+    .join("");
+  const bottom = filtered
+    .slice()
+    .reverse()
+    .map((point) => `L${xScale(point.x).toFixed(2)},${baseline.toFixed(2)}`)
+    .join("");
+
+  return `${top}${bottom}Z`;
+}
+
+function renderLegend(series) {
+  const legend = document.createElement("div");
+  legend.className = "chart-legend";
+  legend.innerHTML = series
+    .map(
+      (item) => `
+        <span class="legend-chip">
+          <span class="legend-swatch" style="background:${item.color}"></span>
+          <span>${item.name}</span>
+        </span>
+      `
+    )
+    .join("");
+  return legend;
+}
+
+function renderLineChart(target, config) {
+  const width = Math.max(target.clientWidth || 0, 320);
+  const height = config.height ?? 300;
+  const margin = { top: 18, right: 16, bottom: 36, left: 52 };
+  const series = normalizeSeries(config.series, config.xType);
+  const allPoints = series.flatMap((item) => item.points.filter((point) => point.y != null));
+
+  if (!allPoints.length) {
+    target.innerHTML = `<p class="card-note">No data available for this chart.</p>`;
+    return;
+  }
+
+  let minX = Math.min(...allPoints.map((point) => point.x));
+  let maxX = Math.max(...allPoints.map((point) => point.x));
+  let minY = Math.min(...allPoints.map((point) => point.y));
+  let maxY = Math.max(...allPoints.map((point) => point.y));
+
+  if (config.baselineZero) {
+    minY = Math.min(minY, 0);
+    maxY = Math.max(maxY, 0);
+  }
+
+  const yPad = Math.max((maxY - minY) * 0.12, (config.baselineZero ? 0 : 1) * 0.001);
+  minY -= yPad;
+  maxY += yPad;
+
+  if (minX === maxX) {
+    minX -= 1;
+    maxX += 1;
+  }
+
+  const plotWidth = width - margin.left - margin.right;
+  const plotHeight = height - margin.top - margin.bottom;
+
+  const xScale = (value) => margin.left + ((value - minX) / (maxX - minX)) * plotWidth;
+  const yScale = (value) => margin.top + plotHeight - ((value - minY) / (maxY - minY)) * plotHeight;
+
+  const yTicks = niceTicks(minY, maxY, 5);
+  const xTicks = [];
+  const xTickCount = 4;
+  for (let index = 0; index < xTickCount; index += 1) {
+    const ratio = xTickCount === 1 ? 0 : index / (xTickCount - 1);
+    xTicks.push(minX + (maxX - minX) * ratio);
+  }
+
+  const svgParts = [];
+  svgParts.push(`<svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${config.label ?? "chart"}">`);
+
+  for (const tick of yTicks) {
+    const y = yScale(tick);
+    svgParts.push(`<line class="chart-grid-line" x1="${margin.left}" y1="${y}" x2="${width - margin.right}" y2="${y}"></line>`);
+    svgParts.push(
+      `<text class="chart-label" x="${margin.left - 10}" y="${y + 4}" text-anchor="end">${config.yFormat ? config.yFormat(tick) : formatNumber(tick, 2)}</text>`
+    );
+  }
+
+  for (const tick of xTicks) {
+    const x = xScale(tick);
+    const label =
+      config.xType === "date"
+        ? monthFormatter.format(new Date(tick))
+        : config.xFormat
+          ? config.xFormat(tick)
+          : formatNumber(tick, 2);
+    svgParts.push(`<line class="chart-grid-line" x1="${x}" y1="${margin.top}" x2="${x}" y2="${height - margin.bottom}"></line>`);
+    svgParts.push(
+      `<text class="chart-label" x="${x}" y="${height - 10}" text-anchor="middle">${label}</text>`
+    );
+  }
+
+  if (config.horizontalLines) {
+    for (const line of config.horizontalLines) {
+      const y = yScale(line.value);
+      svgParts.push(
+        `<line x1="${margin.left}" y1="${y}" x2="${width - margin.right}" y2="${y}" stroke="${line.color}" stroke-width="1.5" stroke-dasharray="5 5"></line>`
+      );
+      svgParts.push(
+        `<text class="chart-label" x="${width - margin.right}" y="${y - 6}" text-anchor="end">${line.label}</text>`
+      );
+    }
+  }
+
+  if (config.verticalLines) {
+    for (const line of config.verticalLines) {
+      const xValue = config.xType === "date" ? new Date(`${line.value}T00:00:00`).getTime() : Number(line.value);
+      const x = xScale(xValue);
+      svgParts.push(
+        `<line x1="${x}" y1="${margin.top}" x2="${x}" y2="${height - margin.bottom}" stroke="${line.color}" stroke-width="1.5" stroke-dasharray="5 5"></line>`
+      );
+      svgParts.push(
+        `<text class="chart-label" x="${x + 6}" y="${margin.top + 12}" text-anchor="start">${line.label}</text>`
+      );
+    }
+  }
+
+  for (const item of series) {
+    if (item.fill) {
+      const area = buildAreaPath(item.points, xScale, yScale, margin.top + plotHeight);
+      if (area) {
+        svgParts.push(`<path d="${area}" fill="${item.fill}" opacity="${item.fillOpacity ?? 1}"></path>`);
+      }
+    }
+  }
+
+  for (const item of series) {
+    const path = buildLinePath(item.points, xScale, yScale);
+    svgParts.push(
+      `<path d="${path}" fill="none" stroke="${item.color}" stroke-width="${item.strokeWidth ?? 3}" stroke-linecap="round" stroke-linejoin="round"${item.dashed ? ` stroke-dasharray="${item.dashed}"` : ""}></path>`
+    );
+  }
+
+  svgParts.push(
+    `<line class="chart-axis-line" x1="${margin.left}" y1="${height - margin.bottom}" x2="${width - margin.right}" y2="${height - margin.bottom}"></line>`
+  );
+  svgParts.push("</svg>");
+
+  target.innerHTML = svgParts.join("");
+  target.appendChild(renderLegend(config.series));
+}
+
+function renderBarChart(target, config) {
+  const width = Math.max(target.clientWidth || 0, 320);
+  const margin = { top: 12, right: 16, bottom: 28, left: 128 };
+  const data = config.data;
+  const height = Math.max(220, data.length * 52);
+
+  const minX = Math.min(0, ...data.map((item) => item.value));
+  const maxX = Math.max(0, ...data.map((item) => item.value));
+  const pad = Math.max((maxX - minX) * 0.12, 0.05);
+  const domainMin = minX - pad;
+  const domainMax = maxX + pad;
+  const plotWidth = width - margin.left - margin.right;
+  const plotHeight = height - margin.top - margin.bottom;
+  const rowHeight = plotHeight / data.length;
+  const xScale = (value) => margin.left + ((value - domainMin) / (domainMax - domainMin)) * plotWidth;
+  const zeroX = xScale(0);
+  const ticks = niceTicks(domainMin, domainMax, 5);
+
+  const svgParts = [];
+  svgParts.push(`<svg class="chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${config.label ?? "bar chart"}">`);
+
+  for (const tick of ticks) {
+    const x = xScale(tick);
+    svgParts.push(`<line class="chart-grid-line" x1="${x}" y1="${margin.top}" x2="${x}" y2="${height - margin.bottom}"></line>`);
+    svgParts.push(
+      `<text class="chart-label" x="${x}" y="${height - 8}" text-anchor="middle">${config.xFormat ? config.xFormat(tick) : formatNumber(tick, 2)}</text>`
+    );
+  }
+
+  data.forEach((item, index) => {
+    const y = margin.top + index * rowHeight + rowHeight * 0.2;
+    const barHeight = rowHeight * 0.58;
+    const x = item.value >= 0 ? zeroX : xScale(item.value);
+    const barWidth = Math.abs(xScale(item.value) - zeroX);
+    svgParts.push(
+      `<text class="chart-label" x="${margin.left - 10}" y="${y + barHeight / 2 + 4}" text-anchor="end">${item.label}</text>`
+    );
+    svgParts.push(
+      `<rect x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="8" fill="${item.color}"></rect>`
+    );
+  });
+
+  svgParts.push(`<line class="chart-axis-line" x1="${zeroX}" y1="${margin.top}" x2="${zeroX}" y2="${height - margin.bottom}"></line>`);
+  svgParts.push("</svg>");
+  target.innerHTML = svgParts.join("");
+}
+
+function buildSignalCard({ eyebrow, title, body, footer }) {
+  return `
+    <p class="eyebrow">${eyebrow}</p>
+    <strong>${title}</strong>
+    <p>${body}</p>
+    <small>${footer}</small>
+  `;
+}
+
+function renderHero(data) {
+  document.getElementById("repo-link").href = data.repo_url;
+  document.getElementById("live-link").href = data.live_url;
+
+  document.getElementById("hero-metrics").innerHTML = data.hero_metrics
+    .map(
+      (item) => `
+        <div class="hero-metric">
+          <div class="hero-metric-label">${item.label}</div>
+          <div class="hero-metric-value">${item.value}</div>
+          <div class="hero-metric-detail">${item.detail}</div>
+        </div>
+      `
+    )
+    .join("");
+
+  const btc = data.crypto.assets.find((asset) => asset.symbol === "BTC-USD");
+  const factor = data.factor;
+  const options = data.options.sample_output;
+
+  document.getElementById("signal-crypto").innerHTML = buildSignalCard({
+    eyebrow: "Crypto",
+    title: "BTC and ETH sample window stays explicit",
+    body: `Volatility study covers ${formatDate(btc.date_range.start)} to ${formatDate(btc.date_range.end)} with walk-forward validation and overlay diagnostics.`,
+    footer: `BTC RMSE ${formatNumber(btc.metrics.walk_forward_rmse, 3)} vs random walk ${formatNumber(btc.metrics.random_walk_rmse, 3)}`,
+  });
+
+  document.getElementById("signal-factor").innerHTML = buildSignalCard({
+    eyebrow: "Factor",
+    title: "Backtest, attribution, and screen live together",
+    body: `Research window runs ${formatDate(factor.metadata.start_date)} to ${formatDate(factor.metadata.end_date)} across ${factor.metadata.backtest_universe_size} backtest names and ${factor.metadata.screening_universe_size} screened names.`,
+    footer: `Total return ${formatPercent(factor.metrics.total_return, 1)} / mean IC ${formatNumber(factor.metrics.mean_information_coefficient, 3)}`,
+  });
+
+  document.getElementById("signal-options").innerHTML = buildSignalCard({
+    eyebrow: "Options",
+    title: "The live link keeps a real interactive demo",
+    body: "The browser pricing module recalculates payoff, volatility sensitivity, and comparative methods without calling a backend.",
+    footer: `Sample call price ${formatNumber(options.black_scholes_price, 4)} / American tree ${formatNumber(options.american_tree_price, 4)}`,
+  });
+
+  document.getElementById("review-repo").href = data.repo_url;
+  document.getElementById("review-crypto").href = data.project_links.crypto;
+  document.getElementById("review-factor").href = data.project_links.factor;
+  document.getElementById("review-options").href = data.project_links.options;
+}
+
+function renderCryptoToggles() {
+  const container = document.getElementById("crypto-toggle");
+  container.innerHTML = state.data.crypto.assets
+    .map(
+      (asset) => `
+        <button class="toggle-button ${asset.symbol === state.selectedCrypto ? "is-active" : ""}" type="button" data-symbol="${asset.symbol}">
+          ${asset.label}
+        </button>
+      `
+    )
+    .join("");
+
+  container.querySelectorAll("button").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.selectedCrypto = button.dataset.symbol;
+      renderCrypto();
+    });
+  });
+}
+
+function renderCrypto() {
+  renderCryptoToggles();
+
+  const asset = state.data.crypto.assets.find((item) => item.symbol === state.selectedCrypto);
+  const lastVolPoint = [...asset.vol_series].reverse().find((item) => item.conditional_vol != null);
+
+  document.getElementById("crypto-dates").textContent = `${formatDate(asset.date_range.start)} to ${formatDate(asset.date_range.end)}`;
+
+  document.getElementById("crypto-metrics").innerHTML = [
+    metricCard("Annualized volatility", formatPercent(asset.metrics.annual_volatility, 1), "Sample annualized realized volatility."),
+    metricCard("VaR 95%", formatSignedPercent(asset.metrics.var_95, 2), "Empirical daily loss threshold."),
+    metricCard(
+      "Walk-forward RMSE",
+      formatNumber(asset.metrics.walk_forward_rmse, 3),
+      `Random walk baseline ${formatNumber(asset.metrics.random_walk_rmse, 3)}`
+    ),
+    metricCard("Direction accuracy", formatPercent(asset.metrics.direction_accuracy, 1), "Sign accuracy over out-of-sample windows."),
+    metricCard("Overlay Sharpe", formatSignedNumber(asset.metrics.strategy_sharpe, 2), "Vol-managed overlay sample performance."),
+    metricCard("Avg leverage", `${formatNumber(asset.metrics.strategy_average_leverage, 2)}x`, `Max drawdown ${formatPercent(asset.metrics.strategy_max_drawdown, 1)}`),
+  ].join("");
+
+  renderLineChart(document.getElementById("crypto-price-chart"), {
+    xType: "date",
+    label: `${asset.label} normalized price chart`,
+    yFormat: (value) => value.toFixed(0),
+    series: [
+      {
+        name: `${asset.label} price index`,
+        color: THEME.teal,
+        fill: "rgba(12, 106, 102, 0.12)",
+        points: asset.price_series.map((point) => ({ x: point.date, y: point.price_index })),
+      },
+    ],
+  });
+
+  const forecastPoints = lastVolPoint
+    ? [{ x: lastVolPoint.date, y: lastVolPoint.conditional_vol }, ...asset.forecast_series.map((point) => ({ x: point.date, y: point.forecast_vol }))]
+    : asset.forecast_series.map((point) => ({ x: point.date, y: point.forecast_vol }));
+
+  renderLineChart(document.getElementById("crypto-vol-chart"), {
+    xType: "date",
+    label: `${asset.label} volatility chart`,
+    yFormat: (value) => formatPercent(value, 1),
+    series: [
+      {
+        name: "Realized vol",
+        color: THEME.copper,
+        points: asset.vol_series.map((point) => ({ x: point.date, y: point.realized_vol })),
+      },
+      {
+        name: "Conditional vol",
+        color: THEME.gold,
+        points: asset.vol_series.map((point) => ({ x: point.date, y: point.conditional_vol })),
+      },
+      {
+        name: "Forward forecast",
+        color: THEME.ink,
+        dashed: "7 6",
+        points: forecastPoints,
+      },
+    ],
+  });
+
+  renderLineChart(document.getElementById("crypto-overlay-chart"), {
+    xType: "date",
+    label: `${asset.label} overlay chart`,
+    yFormat: (value) => formatPercent(value, 0),
+    baselineZero: true,
+    series: [
+      {
+        name: "Vol-managed overlay",
+        color: THEME.teal,
+        points: asset.overlay_series.map((point) => ({ x: point.date, y: point.strategy_curve })),
+      },
+      {
+        name: "Buy and hold",
+        color: THEME.soft,
+        dashed: "5 5",
+        points: asset.overlay_series.map((point) => ({ x: point.date, y: point.benchmark_curve })),
+      },
+    ],
+  });
+}
+
+function renderFactor() {
+  const factor = state.data.factor;
+  document.getElementById("factor-dates").textContent = `${formatDate(factor.metadata.start_date)} to ${formatDate(factor.metadata.end_date)} / ${factor.metadata.transaction_cost_bps} bps transaction cost`;
+
+  document.getElementById("factor-metrics").innerHTML = [
+    metricCard("Total return", formatPercent(factor.metrics.total_return, 1), "Long-short strategy total return."),
+    metricCard("Sharpe ratio", formatNumber(factor.metrics.sharpe_ratio, 2), "Risk-adjusted backtest performance."),
+    metricCard("Mean IC", formatNumber(factor.metrics.mean_information_coefficient, 3), "Average cross-sectional information coefficient."),
+    metricCard("Holdout accuracy", formatPercent(factor.metrics.holdout_accuracy, 1), "Classifier holdout accuracy."),
+    metricCard("ROC AUC", formatNumber(factor.metrics.holdout_roc_auc, 3), "Holdout ranking quality."),
+    metricCard("Screen size", `${factor.metadata.screening_universe_size} names`, `${factor.metadata.backtest_universe_size} names in backtest universe`),
+  ].join("");
+
+  renderLineChart(document.getElementById("factor-performance-chart"), {
+    xType: "date",
+    label: "Factor strategy curve",
+    yFormat: (value) => formatPercent(value, 0),
+    baselineZero: true,
+    series: [
+      {
+        name: "Long-short strategy",
+        color: THEME.teal,
+        points: factor.performance_series.map((point) => ({ x: point.date, y: point.strategy_curve })),
+      },
+      {
+        name: "Equal-weight benchmark",
+        color: THEME.soft,
+        dashed: "5 5",
+        points: factor.performance_series.map((point) => ({ x: point.date, y: point.benchmark_curve })),
+      },
+    ],
+  });
+
+  renderBarChart(document.getElementById("factor-exposure-chart"), {
+    label: "Factor exposure chart",
+    xFormat: (value) => formatNumber(value, 2),
+    data: factor.factor_exposures.map((item) => ({
+      label: item.factor,
+      value: item.beta,
+      color: item.beta >= 0 ? THEME.green : THEME.rose,
+    })),
+  });
+
+  document.getElementById("factor-table").innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Ticker</th>
+          <th>Sector</th>
+          <th>Screen</th>
+          <th>ML Prob.</th>
+          <th>Price</th>
+          <th>Target</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${factor.top_screen
+          .map(
+            (row) => `
+              <tr>
+                <td>${row.screen_rank}</td>
+                <td><strong>${row.ticker}</strong></td>
+                <td>${row.sector}</td>
+                <td>${formatNumber(row.screen_score, 3)}</td>
+                <td>${row.probability.toFixed(1)}%</td>
+                <td>${formatCurrency(row.price)}</td>
+                <td>${formatCurrency(row.target)}</td>
+              </tr>
+            `
+          )
+          .join("")}
+      </tbody>
+    </table>
+  `;
+
+  document.getElementById("factor-ideas").innerHTML = factor.ideas
+    .map(
+      (idea) => `
+        <article class="idea-card">
+          <p class="section-index">${idea.ticker}</p>
+          <h3>${idea.ticker} thesis snapshot</h3>
+          <p>${idea.thesis}</p>
+          <p class="idea-risk"><strong>Risk:</strong> ${idea.risk}</p>
+        </article>
+      `
+    )
+    .join("");
+}
+
+function erf(x) {
+  const sign = x < 0 ? -1 : 1;
+  const a1 = 0.254829592;
+  const a2 = -0.284496736;
+  const a3 = 1.421413741;
+  const a4 = -1.453152027;
+  const a5 = 1.061405429;
+  const p = 0.3275911;
+  const absX = Math.abs(x);
+  const t = 1 / (1 + p * absX);
+  const y = 1 - (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-absX * absX));
+  return sign * y;
+}
+
+function normCdf(x) {
+  return 0.5 * (1 + erf(x / Math.sqrt(2)));
+}
+
+function normPdf(x) {
+  return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+}
+
+function blackScholes(spot, strike, rate, volatility, maturity, optionType) {
+  const sqrtT = Math.sqrt(maturity);
+  const d1 = (Math.log(spot / strike) + (rate + 0.5 * volatility * volatility) * maturity) / (volatility * sqrtT);
+  const d2 = d1 - volatility * sqrtT;
+  const discount = Math.exp(-rate * maturity);
+
+  let price;
+  let delta;
+  let theta;
+  let rho;
+
+  if (optionType === "call") {
+    price = spot * normCdf(d1) - strike * discount * normCdf(d2);
+    delta = normCdf(d1);
+    theta =
+      (-spot * normPdf(d1) * volatility) / (2 * sqrtT) -
+      rate * strike * discount * normCdf(d2);
+    rho = strike * maturity * discount * normCdf(d2);
+  } else {
+    price = strike * discount * normCdf(-d2) - spot * normCdf(-d1);
+    delta = normCdf(d1) - 1;
+    theta =
+      (-spot * normPdf(d1) * volatility) / (2 * sqrtT) +
+      rate * strike * discount * normCdf(-d2);
+    rho = -strike * maturity * discount * normCdf(-d2);
+  }
+
+  return {
+    price,
+    delta,
+    gamma: normPdf(d1) / (spot * volatility * sqrtT),
+    vega: spot * normPdf(d1) * sqrtT,
+    theta,
+    rho,
+  };
+}
+
+function americanOptionBinomial(spot, strike, rate, volatility, maturity, optionType, steps = 200) {
+  const dt = maturity / steps;
+  const up = Math.exp(volatility * Math.sqrt(dt));
+  const down = 1 / up;
+  const growth = Math.exp(rate * dt);
+  const prob = Math.min(1, Math.max(0, (growth - down) / (up - down)));
+  const discount = Math.exp(-rate * dt);
+  const values = [];
+
+  for (let i = 0; i <= steps; i += 1) {
+    const underlying = spot * (up ** (steps - i)) * (down ** i);
+    values[i] = optionType === "call" ? Math.max(underlying - strike, 0) : Math.max(strike - underlying, 0);
+  }
+
+  for (let step = steps - 1; step >= 0; step -= 1) {
+    for (let node = 0; node <= step; node += 1) {
+      const continuation = discount * (prob * values[node] + (1 - prob) * values[node + 1]);
+      const underlying = spot * (up ** (step - node)) * (down ** node);
+      const exercise = optionType === "call" ? Math.max(underlying - strike, 0) : Math.max(strike - underlying, 0);
+      values[node] = Math.max(continuation, exercise);
+    }
+  }
+
+  return values[0];
+}
+
+function mulberry32(seed) {
+  let t = seed >>> 0;
+  return function random() {
+    t += 0x6d2b79f5;
+    let value = Math.imul(t ^ (t >>> 15), 1 | t);
+    value ^= value + Math.imul(value ^ (value >>> 7), 61 | value);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function monteCarloPrice(spot, strike, rate, volatility, maturity, optionType, paths = 6000, seed = 42) {
+  const random = mulberry32(seed);
+  let spare = null;
+  const normal = () => {
+    if (spare != null) {
+      const value = spare;
+      spare = null;
+      return value;
+    }
+    let u = 0;
+    let v = 0;
+    while (u === 0) u = random();
+    while (v === 0) v = random();
+    const mag = Math.sqrt(-2.0 * Math.log(u));
+    spare = mag * Math.sin(2.0 * Math.PI * v);
+    return mag * Math.cos(2.0 * Math.PI * v);
+  };
+
+  const discount = Math.exp(-rate * maturity);
+  let sum = 0;
+  let sumSq = 0;
+
+  for (let index = 0; index < paths; index += 1) {
+    const z = normal();
+    const terminal = spot * Math.exp((rate - 0.5 * volatility * volatility) * maturity + volatility * Math.sqrt(maturity) * z);
+    const payoff = optionType === "call" ? Math.max(terminal - strike, 0) : Math.max(strike - terminal, 0);
+    const discounted = discount * payoff;
+    sum += discounted;
+    sumSq += discounted * discounted;
+  }
+
+  const price = sum / paths;
+  const variance = Math.max((sumSq - (sum * sum) / paths) / Math.max(paths - 1, 1), 0);
+  const stdError = Math.sqrt(variance / paths);
+
+  return {
+    price,
+    ci: 1.96 * stdError,
+  };
+}
+
+function renderOptionsControls() {
+  const config = [
+    { key: "spot", label: "Spot price", min: 50, max: 150, step: 1, format: (value) => formatCurrency(value, 0) },
+    { key: "strike", label: "Strike", min: 50, max: 150, step: 1, format: (value) => formatCurrency(value, 0) },
+    { key: "maturity", label: "Maturity", min: 0.1, max: 2, step: 0.05, format: (value) => `${value.toFixed(2)}y` },
+    { key: "rate", label: "Risk-free rate", min: 0, max: 0.1, step: 0.0025, format: (value) => formatPercent(value, 1) },
+    { key: "volatility", label: "Volatility", min: 0.05, max: 0.8, step: 0.01, format: (value) => formatPercent(value, 0) },
+  ];
+
+  const container = document.getElementById("options-controls");
+  container.innerHTML = config
+    .map(
+      (item) => `
+        <label class="slider-row" for="control-${item.key}">
+          <span class="slider-meta">
+            <span>${item.label}</span>
+            <span id="control-value-${item.key}">${item.format(state.options[item.key])}</span>
+          </span>
+          <input
+            id="control-${item.key}"
+            type="range"
+            min="${item.min}"
+            max="${item.max}"
+            step="${item.step}"
+            value="${state.options[item.key]}"
+            data-key="${item.key}"
+          >
+        </label>
+      `
+    )
+    .join("");
+
+  container.querySelectorAll("input").forEach((input) => {
+    const item = config.find((entry) => entry.key === input.dataset.key);
+    input.addEventListener("input", () => {
+      state.options[input.dataset.key] = Number(input.value);
+      document.getElementById(`control-value-${input.dataset.key}`).textContent = item.format(state.options[input.dataset.key]);
+      renderOptions();
+    });
+  });
+
+  document.querySelectorAll("[data-option-type]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.optionType === state.options.optionType);
+    button.addEventListener("click", () => {
+      state.options.optionType = button.dataset.optionType;
+      document.querySelectorAll("[data-option-type]").forEach((entry) => {
+        entry.classList.toggle("is-active", entry.dataset.optionType === state.options.optionType);
+      });
+      renderOptions();
+    });
+  });
+}
+
+function renderOptions() {
+  const { optionType, spot, strike, rate, volatility, maturity } = state.options;
+  const bs = blackScholes(spot, strike, rate, volatility, maturity, optionType);
+  const american = americanOptionBinomial(spot, strike, rate, volatility, maturity, optionType, 180);
+  const mc = monteCarloPrice(spot, strike, rate, volatility, maturity, optionType, 5000, 42);
+
+  const priceGrid = [];
+  for (let x = spot * 0.45; x <= spot * 1.55; x += (spot * 1.1) / 44) {
+    const intrinsic = optionType === "call" ? Math.max(x - strike, 0) : Math.max(strike - x, 0);
+    priceGrid.push({ x, intrinsic, pnl: intrinsic - bs.price });
+  }
+
+  const breakeven = optionType === "call" ? strike + bs.price : strike - bs.price;
+  renderLineChart(document.getElementById("options-payoff-chart"), {
+    xType: "number",
+    label: "Options payoff chart",
+    yFormat: (value) => formatCurrency(value, 0),
+    xFormat: (value) => formatCurrency(value, 0),
+    baselineZero: true,
+    verticalLines: [{ value: breakeven, label: `Breakeven ${formatCurrency(breakeven, 1)}`, color: THEME.rose }],
+    series: [
+      {
+        name: "Intrinsic payoff",
+        color: THEME.teal,
+        points: priceGrid.map((point) => ({ x: point.x, y: point.intrinsic })),
+      },
+      {
+        name: "Net P/L",
+        color: THEME.copper,
+        dashed: "7 6",
+        points: priceGrid.map((point) => ({ x: point.x, y: point.pnl })),
+      },
+    ],
+  });
+
+  const volGrid = [];
+  for (let sigma = 0.05; sigma <= 0.8; sigma += 0.015) {
+    volGrid.push({
+      x: sigma * 100,
+      y: blackScholes(spot, strike, rate, sigma, maturity, optionType).price,
+    });
+  }
+
+  renderLineChart(document.getElementById("options-vol-chart"), {
+    xType: "number",
+    label: "Option value vs volatility chart",
+    yFormat: (value) => formatCurrency(value, 0),
+    xFormat: (value) => `${value.toFixed(0)}%`,
+    verticalLines: [{ value: volatility * 100, label: `Selected ${formatPercent(volatility, 0)}`, color: THEME.teal }],
+    series: [
+      {
+        name: "Black-Scholes value",
+        color: THEME.ink,
+        points: volGrid,
+      },
+    ],
+  });
+
+  document.getElementById("options-metrics").innerHTML = [
+    metricCard("Black-Scholes price", formatCurrency(bs.price, 4), "Closed-form European price."),
+    metricCard("American tree", formatCurrency(american, 4), "CRR binomial tree approximation."),
+    metricCard("Monte Carlo", formatCurrency(mc.price, 4), `95% CI +/- ${mc.ci.toFixed(4)}`),
+    metricCard("Delta", formatSignedNumber(bs.delta, 4), "First derivative wrt spot."),
+    metricCard("Gamma", formatNumber(bs.gamma, 4), "Curvature of delta."),
+    metricCard("Vega", formatNumber(bs.vega, 4), "Sensitivity to implied volatility."),
+    metricCard("Theta", formatSignedNumber(bs.theta, 4), "Time-decay estimate."),
+    metricCard("Rho", formatSignedNumber(bs.rho, 4), "Rate sensitivity."),
+  ].join("");
+}
+
+function debounce(fn, wait = 150) {
+  let timeout = null;
+  return (...args) => {
+    window.clearTimeout(timeout);
+    timeout = window.setTimeout(() => fn(...args), wait);
+  };
+}
+
+function rerenderAll() {
+  renderCrypto();
+  renderFactor();
+  renderOptions();
+}
+
+async function init() {
+  const inlineData = document.getElementById("portfolio-data");
+  const data = inlineData
+    ? JSON.parse(inlineData.textContent)
+    : await fetch("./assets/data/portfolio.json").then((response) => response.json());
+  state.data = data;
+  state.options = { ...data.options.default_scenario };
+
+  renderHero(data);
+  renderCrypto();
+  renderFactor();
+  renderOptionsControls();
+  renderOptions();
+
+  window.addEventListener("resize", debounce(rerenderAll));
+}
+
+init().catch((error) => {
+  console.error(error);
+  document.body.insertAdjacentHTML(
+    "afterbegin",
+    `<div class="noscript-banner">The portfolio data could not be loaded.</div>`
+  );
+});
+
+</script>
+  </body>
+</html>

@@ -9,6 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS_DATA = ROOT / "docs" / "assets" / "data" / "portfolio.json"
+DOCS_LIVE = ROOT / "docs" / "live.html"
 
 
 def read_csv_rows(path: Path) -> list[dict[str, str]]:
@@ -297,7 +298,10 @@ def build_payload() -> dict[str, object]:
 
     return {
         "generated_for": "GitHub Pages portfolio microsite",
-        "live_url": "https://astew24.github.io/quant-finance/",
+        "live_url": (
+            "https://htmlpreview.github.io/?https://raw.githubusercontent.com/"
+            "astew24/quant-finance/main/docs/live.html"
+        ),
         "repo_url": "https://github.com/astew24/quant-finance",
         "project_links": {
             "crypto": "https://github.com/astew24/quant-finance/tree/main/projects/crypto-volatility-risk-engine",
@@ -327,11 +331,37 @@ def build_payload() -> dict[str, object]:
     }
 
 
+def build_live_html(payload: dict[str, object]) -> str:
+    index_html = (ROOT / "docs" / "index.html").read_text(encoding="utf-8")
+    styles = (ROOT / "docs" / "assets" / "css" / "styles.css").read_text(encoding="utf-8")
+    script = (ROOT / "docs" / "assets" / "js" / "app.js").read_text(encoding="utf-8")
+    payload_json = json.dumps(payload, indent=2).replace("</", "<\\/")
+
+    html = index_html.replace(
+        '<link rel="stylesheet" href="./assets/css/styles.css">',
+        f"<style>\n{styles}\n</style>",
+    )
+    html = html.replace(
+        '<script type="module" src="./assets/js/app.js"></script>',
+        (
+            '<script id="portfolio-data" type="application/json">\n'
+            f"{payload_json}\n"
+            "</script>\n"
+            '<script type="module">\n'
+            f"{script}\n"
+            "</script>"
+        ),
+    )
+    return html
+
+
 def main() -> None:
     payload = build_payload()
     DOCS_DATA.parent.mkdir(parents=True, exist_ok=True)
     DOCS_DATA.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    DOCS_LIVE.write_text(build_live_html(payload), encoding="utf-8")
     print(f"Wrote {DOCS_DATA}")
+    print(f"Wrote {DOCS_LIVE}")
 
 
 if __name__ == "__main__":
