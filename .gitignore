@@ -12,6 +12,8 @@ venv/
 
 # Data artifacts and outputs
 **/data/
+!docs/assets/data/
+!docs/assets/data/portfolio.json
 **/models/
 **/plots/
 output/
