@@ -8,10 +8,10 @@ This repository contains three quantitative finance projects. The short project 
 
 The public portfolio surface is designed to be the fastest review path:
 
-- Live URL: `https://htmlpreview.github.io/?https://raw.githubusercontent.com/astew24/quant-finance/main/docs/live.html`
+- Live URL: `https://astew24.github.io/quant-finance/`
 - Source: [`docs/`](./docs/index.html) with JSON built from committed sample artifacts by [`scripts/build_portfolio_site_data.py`](./scripts/build_portfolio_site_data.py)
 - Single-file deployable build: [`docs/live.html`](./docs/live.html)
-- Optional GitHub Pages workflow: [`.github/workflows/pages.yml`](./.github/workflows/pages.yml) after enabling Pages in repository settings
+- Deployment: GitHub Pages from the repository `main` branch using the `docs/` folder
 
 ## Portfolio Snapshot
 
