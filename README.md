@@ -4,6 +4,14 @@ This repository showcases a small quant portfolio across three distinct workflow
 
 This repository contains three quantitative finance projects. The short project pages live under [`projects/`](./projects/README.md), while the implementation directories remain at the repo root so the Python packages and CLI workflows stay stable.
 
+## Live Portfolio Site
+
+The public portfolio surface is designed to be the fastest review path:
+
+- Live URL: `https://astew24.github.io/quant-finance/`
+- Source: [`docs/`](./docs/index.html) with JSON built from committed sample artifacts by [`scripts/build_portfolio_site_data.py`](./scripts/build_portfolio_site_data.py)
+- Deployment: GitHub Pages via [`.github/workflows/pages.yml`](./.github/workflows/pages.yml)
+
 ## Portfolio Snapshot
 
 | Project | Focus | Results Snapshot | Why It Matters |
@@ -14,13 +22,22 @@ This repository contains three quantitative finance projects. The short project 
 
 ## Review Fast
 
-For a recruiter-friendly walkthrough, use the local dashboard path rather than relying on any external deployment:
+For a recruiter-friendly public link, use the GitHub Pages site above.
+
+For a deeper local walkthrough with more controls, use the Streamlit dashboard:
 
 ```bash
 streamlit run streamlit_app.py
 ```
 
 The app defaults to committed sample artifacts and an offline-safe demo mode, so the portfolio can be reviewed without credentials, API keys, or a live market data connection.
+
+To preview the public site locally:
+
+```bash
+python3 scripts/build_portfolio_site_data.py
+python3 -m http.server 8000 -d docs
+```
 
 ## Repository Layout
 

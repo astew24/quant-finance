@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quant Finance Portfolio</title>
+    <meta
+      name="description"
+      content="A live quant finance portfolio covering crypto volatility modeling, equity factor research, and options pricing."
+    >
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    >
+    <link rel="stylesheet" href="./assets/css/styles.css">
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="#top">AS / Quant Finance</a>
+        <nav class="nav">
+          <a href="#crypto">Crypto</a>
+          <a href="#factor">Factor</a>
+          <a href="#options">Options</a>
+          <a href="#review">Review</a>
+        </nav>
+        <a class="button button--ghost" id="repo-link" href="https://github.com/astew24/quant-finance">Repository</a>
+      </header>
+
+      <main id="top">
+        <section class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow">Live portfolio demo / quantitative research systems</p>
+            <h1>Research systems that show their work.</h1>
+            <p class="lede">
+              This portfolio pulls three applied workflows into one public review surface:
+              crypto volatility forecasting, quantamental factor research, and derivatives pricing.
+              The site is backed by committed sample artifacts from the repository rather than placeholder marketing copy.
+            </p>
+            <div class="hero-actions">
+              <a class="button" href="#crypto">See the evidence</a>
+              <a class="button button--ghost" id="live-link" href="https://astew24.github.io/quant-finance/">Live URL</a>
+            </div>
+            <div class="hero-notes">
+              <div class="note-chip">Exact sample dates, not vague “recent” claims</div>
+              <div class="note-chip">Interactive options demo runs fully client-side</div>
+              <div class="note-chip">Every section links back to auditable repo paths</div>
+            </div>
+          </div>
+
+          <aside class="hero-panel">
+            <div class="panel-label">Proof points</div>
+            <div class="metric-stack" id="hero-metrics"></div>
+          </aside>
+        </section>
+
+        <section class="signal-strip" id="evidence">
+          <article class="signal-card" id="signal-crypto"></article>
+          <article class="signal-card" id="signal-factor"></article>
+          <article class="signal-card" id="signal-options"></article>
+        </section>
+
+        <section class="section" id="crypto">
+          <div class="section-head">
+            <div>
+              <p class="section-index">01 / Crypto Volatility Risk Engine</p>
+              <h2>Walk-forward volatility research with a clean public readout</h2>
+            </div>
+            <p class="section-summary">
+              The crypto workflow uses committed BTC and ETH sample artifacts, so the public site stays fast and deterministic while still showing model behavior, risk thresholds, and overlay outcomes.
+            </p>
+          </div>
+
+          <div class="control-row">
+            <div class="toggle-group" id="crypto-toggle"></div>
+            <div class="section-meta" id="crypto-dates"></div>
+          </div>
+
+          <div class="grid-two">
+            <article class="card chart-card">
+              <div class="card-head">
+                <div>
+                  <p class="card-kicker">Market path</p>
+                  <h3>Normalized price series</h3>
+                </div>
+                <p class="card-note">Built from committed log returns and rebased to 100.</p>
+              </div>
+              <div class="chart-host" id="crypto-price-chart"></div>
+            </article>
+
+            <article class="card chart-card">
+              <div class="card-head">
+                <div>
+                  <p class="card-kicker">Model state</p>
+                  <h3>Realized, conditional, and forward volatility</h3>
+                </div>
+                <p class="card-note">Shows how the conditional process tracks the realized series and bridges into the 10-day forecast.</p>
+              </div>
+              <div class="chart-host" id="crypto-vol-chart"></div>
+            </article>
+          </div>
+
+          <div class="grid-two grid-two--bottom">
+            <article class="card metrics-card">
+              <div class="card-head">
+                <div>
+                  <p class="card-kicker">Risk readout</p>
+                  <h3>Why the model matters</h3>
+                </div>
+              </div>
+              <div class="metric-grid" id="crypto-metrics"></div>
+            </article>
+
+            <article class="card chart-card">
+              <div class="card-head">
+                <div>
+                  <p class="card-kicker">Overlay behavior</p>
+                  <h3>Vol-managed overlay vs buy-and-hold</h3>
+                </div>
+                <p class="card-note">Overlay curve is measured over the strategy evaluation window only.</p>
+              </div>
+              <div class="chart-host" id="crypto-overlay-chart"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="factor">
+          <div class="section-head">
+            <div>
+              <p class="section-index">02 / Quantamental Equity Research Platform</p>
+              <h2>Cross-sectional factor research with attribution and screening output</h2>
+            </div>
+            <p class="section-summary">
+              This section packages the backtest window, factor exposures, and latest screening slate into one scan-friendly reviewer workflow instead of spreading the story across notebooks and CSV files.
+            </p>
+          </div>
+
+          <div class="grid-two">
+            <article class="card chart-card">
+              <div class="card-head">
+                <div>
+                  <p class="card-kicker">Backtest result</p>
+                  <h3>Strategy curve vs benchmark</h3>
+                </div>
+                <p class="card-note" id="factor-dates"></p>
+              </div>
+              <div class="chart-host" id="factor-performance-chart"></div>
+            </article>
+
+            <article class="card chart-card">
+              <div class="card-head">
+                <div>
+                  <p class="card-kicker">Attribution</p>
+                  <h3>Estimated factor exposures</h3>
+                </div>
+                <p class="card-note">Regression betas show where realized performance actually loaded.</p>
+              </div>
+              <div class="chart-host chart-host--compact" id="factor-exposure-chart"></div>
+            </article>
+          </div>
+
+          <div class="grid-two grid-two--bottom">
+            <article class="card metrics-card">
+              <div class="card-head">
+                <div>
+                  <p class="card-kicker">Snapshot</p>
+                  <h3>Research metrics</h3>
+                </div>
+              </div>
+              <div class="metric-grid" id="factor-metrics"></div>
+            </article>
+
+            <article class="card table-card">
+              <div class="card-head">
+                <div>
+                  <p class="card-kicker">Latest screen</p>
+                  <h3>Top ranked names</h3>
+                </div>
+                <p class="card-note">Rank combines factor score and classifier probability.</p>
+              </div>
+              <div class="table-wrap" id="factor-table"></div>
+            </article>
+          </div>
+
+          <div class="idea-grid" id="factor-ideas"></div>
+        </section>
+
+        <section class="section" id="options">
+          <div class="section-head">
+            <div>
+              <p class="section-index">03 / Options Pricing Toolkit</p>
+              <h2>Client-side pricing demo that still feels like a real desk tool</h2>
+            </div>
+            <p class="section-summary">
+              The options section recreates the pricing logic in-browser so the live link does not degrade into a static screenshot. You can change contract assumptions and immediately see payoff and volatility sensitivity move.
+            </p>
+          </div>
+
+          <div class="grid-two options-layout">
+            <article class="card controls-card">
+              <div class="card-head">
+                <div>
+                  <p class="card-kicker">Scenario controls</p>
+                  <h3>Interactive contract setup</h3>
+                </div>
+              </div>
+
+              <div class="pill-group" id="option-type-toggle">
+                <button class="pill is-active" data-option-type="call" type="button">Call</button>
+                <button class="pill" data-option-type="put" type="button">Put</button>
+              </div>
+
+              <div class="slider-group" id="options-controls"></div>
+            </article>
+
+            <div class="options-panels">
+              <article class="card chart-card">
+                <div class="card-head">
+                  <div>
+                    <p class="card-kicker">Expiry profile</p>
+                    <h3>Intrinsic payoff and net P/L</h3>
+                  </div>
+                  <p class="card-note">Breakeven moves with the selected premium.</p>
+                </div>
+                <div class="chart-host" id="options-payoff-chart"></div>
+              </article>
+
+              <article class="card chart-card">
+                <div class="card-head">
+                  <div>
+                    <p class="card-kicker">Sensitivity</p>
+                    <h3>Option value vs implied volatility</h3>
+                  </div>
+                  <p class="card-note">The selected implied volatility is marked on the curve.</p>
+                </div>
+                <div class="chart-host" id="options-vol-chart"></div>
+              </article>
+            </div>
+          </div>
+
+          <div class="metric-grid metric-grid--wide" id="options-metrics"></div>
+        </section>
+
+        <section class="section section--review" id="review">
+          <div class="section-head">
+            <div>
+              <p class="section-index">04 / Review Path</p>
+              <h2>Code, notebooks, and deployment all stay one click away</h2>
+            </div>
+            <p class="section-summary">
+              The live link is the fast scan. The repository remains the source of truth for implementation detail, tests, and the original project pages.
+            </p>
+          </div>
+
+          <div class="review-grid">
+            <a class="review-card" id="review-repo" href="https://github.com/astew24/quant-finance">
+              <span class="review-label">Repository</span>
+              <strong>Open the full codebase</strong>
+              <p>Python packages, Streamlit dashboard, tests, notebooks, and sample outputs.</p>
+            </a>
+            <a class="review-card" id="review-crypto" href="https://github.com/astew24/quant-finance/tree/main/projects/crypto-volatility-risk-engine">
+              <span class="review-label">Project Page</span>
+              <strong>Crypto volatility writeup</strong>
+              <p>Method, results, and run instructions for the volatility workflow.</p>
+            </a>
+            <a class="review-card" id="review-factor" href="https://github.com/astew24/quant-finance/tree/main/projects/equity-factor-screening-pipeline">
+              <span class="review-label">Project Page</span>
+              <strong>Factor research writeup</strong>
+              <p>Factor construction, screening logic, and backtest framing.</p>
+            </a>
+            <a class="review-card" id="review-options" href="https://github.com/astew24/quant-finance/tree/main/projects/options-pricing-toolkit">
+              <span class="review-label">Project Page</span>
+              <strong>Options toolkit writeup</strong>
+              <p>Analytical formulas, numerical methods, and validation notes.</p>
+            </a>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <noscript>
+      <div class="noscript-banner">
+        This site expects JavaScript so it can render charts from the committed sample artifacts.
+      </div>
+    </noscript>
+
+    <script type="module" src="./assets/js/app.js"></script>
+  </body>
+</html>
