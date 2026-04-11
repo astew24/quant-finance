@@ -9,7 +9,6 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 import logging
 from typing import Dict, Tuple
 import warnings
-warnings.filterwarnings('ignore')
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +36,9 @@ class GARCHModel:
             returns_clean, vol=self.vol, p=self.p, q=self.q,
             mean=self.mean, dist='normal'
         )
-        self.fitted_model = self.model.fit(disp='off')
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=UserWarning, module="arch")
+            self.fitted_model = self.model.fit(disp='off')
         self.params = self.fitted_model.params
 
         logger.debug(f"GARCH({self.p},{self.q}) fitted -- params: {dict(self.params)}")
