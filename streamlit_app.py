@@ -1,779 +1,1189 @@
 """
-Crypto Market Analytics Platform
-Interactive dashboard for volatility forecasting, risk monitoring, and market insights.
+Quant finance portfolio showcase built on top of committed project artifacts.
 """
 
-import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+from __future__ import annotations
+
 from datetime import datetime, timedelta
+from pathlib import Path
 import warnings
+
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
+import streamlit as st
+
+from crypto_volatility.src.backtesting import run_full_backtest
+from crypto_volatility.src.data_collector import CryptoDataCollector
+from crypto_volatility.src.demo_data import (
+    available_sample_symbols,
+    load_sample_forecast,
+    load_sample_market_data,
+    sample_data_exists,
+)
+from crypto_volatility.src.garch_model import GARCHModel
+from crypto_volatility.src.risk_utils import calculate_cvar, calculate_var, detect_regimes
+from options_pricing.src.black_scholes import black_scholes_greeks, black_scholes_price
+from options_pricing.src.numerical_methods import american_option_binomial, monte_carlo_price
+
 warnings.filterwarnings("ignore")
 
-from crypto_volatility.src.data_collector import CryptoDataCollector
-from crypto_volatility.src.garch_model import GARCHModel, compare_garch_models
-from crypto_volatility.src.metrics import calculate_rmse
-from crypto_volatility.src.risk_utils import calculate_var, calculate_cvar, detect_regimes
-from crypto_volatility.src.backtesting import run_full_backtest
 
-# ---------------------------------------------------------------------------
-# Config
-# ---------------------------------------------------------------------------
+ROOT = Path(__file__).resolve().parent
+CRYPTO_SAMPLE_DIR = ROOT / "crypto_volatility" / "output_sample"
+FACTOR_SAMPLE_DIR = ROOT / "factor_risk_model" / "output_sample"
+CRYPTO_LIVE_AVAILABLE = ["BTC-USD", "ETH-USD", "SOL-USD", "AVAX-USD", "DOGE-USD"]
+CRYPTO_SAMPLE_AVAILABLE = available_sample_symbols()
+
+
 st.set_page_config(
-    page_title="Crypto Market Analytics",
+    page_title="Quant Finance Portfolio",
     page_icon="",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
+
 COLORS = {
-    "primary": "#6366f1",    # indigo
-    "secondary": "#8b5cf6",  # violet
-    "accent": "#06b6d4",     # cyan
-    "success": "#10b981",    # emerald
-    "warning": "#f59e0b",    # amber
-    "danger": "#ef4444",     # red
-    "muted": "#94a3b8",      # slate
-    "bg_card": "#1e293b",    # slate-800
-    "text": "#e2e8f0",       # slate-200
+    "primary": "#0f766e",
+    "secondary": "#0f172a",
+    "accent": "#d97706",
+    "success": "#15803d",
+    "warning": "#b45309",
+    "danger": "#b91c1c",
+    "muted": "#64748b",
+    "bg_card": "#f8fafc",
+    "text": "#0f172a",
 }
 
 CHART_LAYOUT = dict(
-    template="plotly_dark",
+    template="plotly_white",
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Inter, system-ui, sans-serif", size=12),
-    margin=dict(l=0, r=0, t=30, b=0),
+    font=dict(family="Inter, system-ui, sans-serif", size=12, color=COLORS["text"]),
+    margin=dict(l=8, r=8, t=52, b=8),
 )
 
-# ---------------------------------------------------------------------------
-# Custom CSS
-# ---------------------------------------------------------------------------
-st.markdown("""
+
+st.markdown(
+    """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-.stApp {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+:root {
+    --card-border: #dbe4ee;
+    --card-bg: rgba(248, 250, 252, 0.88);
+    --page-accent: #0f766e;
+    --page-secondary: #0f172a;
+    --page-warm: #d97706;
 }
 
-/* Header */
+.stApp {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.10), transparent 35%),
+        radial-gradient(circle at top right, rgba(217, 119, 6, 0.10), transparent 28%),
+        linear-gradient(180deg, #f8fafc 0%, #edf2f7 100%);
+}
+
 h1 {
     font-weight: 700 !important;
-    letter-spacing: -0.02em !important;
-    background: linear-gradient(135deg, #6366f1, #06b6d4);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    letter-spacing: -0.03em !important;
+    color: var(--page-secondary) !important;
 }
 
 h2, h3 {
-    font-weight: 600 !important;
-    letter-spacing: -0.01em !important;
-    color: #e2e8f0 !important;
+    font-weight: 650 !important;
+    letter-spacing: -0.02em !important;
+    color: var(--page-secondary) !important;
 }
 
-/* Metric cards */
 [data-testid="stMetric"] {
-    background: linear-gradient(135deg, #1e293b, #0f172a);
-    border: 1px solid #334155;
-    border-radius: 12px;
-    padding: 16px 20px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,250,252,0.96));
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 16px 18px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
 }
 
 [data-testid="stMetricLabel"] {
     font-size: 0.75rem !important;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #94a3b8 !important;
+    letter-spacing: 0.06em;
+    color: #64748b !important;
 }
 
 [data-testid="stMetricValue"] {
-    font-size: 1.5rem !important;
+    color: var(--page-secondary) !important;
     font-weight: 700 !important;
-    color: #e2e8f0 !important;
 }
 
-/* Tabs */
+.portfolio-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    padding: 20px 22px;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+    min-height: 180px;
+}
+
+.portfolio-card h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.1rem;
+}
+
+.portfolio-card p {
+    margin: 0;
+    color: #334155;
+    line-height: 1.5;
+}
+
+.source-note {
+    color: #475569;
+    font-size: 0.9rem;
+}
+
 .stTabs [data-baseweb="tab-list"] {
     gap: 0;
-    background: #0f172a;
-    border-radius: 12px;
+    background: rgba(255,255,255,0.72);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
     padding: 4px;
-    border: 1px solid #1e293b;
 }
 
 .stTabs [data-baseweb="tab"] {
-    border-radius: 8px;
-    padding: 8px 20px;
-    font-weight: 500;
-    font-size: 0.85rem;
-    color: #94a3b8;
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-weight: 600;
+    color: #475569;
 }
 
 .stTabs [aria-selected="true"] {
-    background: #1e293b !important;
-    color: #e2e8f0 !important;
+    background: #ffffff !important;
+    color: var(--page-secondary) !important;
 }
 
-/* Expanders */
-.streamlit-expanderHeader {
-    font-weight: 600 !important;
-    font-size: 0.9rem !important;
-    color: #e2e8f0 !important;
-    background: #1e293b !important;
-    border-radius: 8px !important;
-}
-
-/* Buttons */
-.stButton > button[kind="primary"] {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
-    border: none !important;
-    border-radius: 8px !important;
-    font-weight: 600 !important;
-    letter-spacing: 0.02em;
-    padding: 10px 24px !important;
-}
-
-/* Alert boxes */
-.stAlert {
-    border-radius: 10px !important;
-    border: none !important;
-}
-
-/* Dataframes */
-[data-testid="stDataFrame"] {
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-/* Sidebar */
 section[data-testid="stSidebar"] {
-    background: #0f172a;
-    border-right: 1px solid #1e293b;
+    background: rgba(255,255,255,0.92);
 }
 
-/* Hide default Streamlit branding */
+.stAlert {
+    border-radius: 12px !important;
+}
+
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 </style>
-""", unsafe_allow_html=True)
-
-# ---------------------------------------------------------------------------
-# Sidebar
-# ---------------------------------------------------------------------------
-st.sidebar.markdown("## Settings")
-
-AVAILABLE = ["BTC-USD", "ETH-USD", "SOL-USD", "AVAX-USD", "DOGE-USD"]
-symbols = st.sidebar.multiselect("Assets", AVAILABLE, default=["BTC-USD", "ETH-USD"])
-if not symbols:
-    symbols = ["BTC-USD"]
-
-days_back = st.sidebar.slider("History (days)", 365, 1825, 730, step=30)
-vol_window = st.sidebar.slider("Volatility window", 7, 90, 30)
-forecast_horizon = st.sidebar.slider("Forecast horizon (days)", 1, 30, 10)
-alert_mult = st.sidebar.slider("Alert threshold (x avg vol)", 1.0, 3.0, 1.5, 0.1)
-
-run = st.sidebar.button("Run Analysis", type="primary", use_container_width=True)
-
-st.sidebar.markdown("---")
-st.sidebar.caption(
-    "Fetches live data from Yahoo Finance. "
-    "No API key required."
+""",
+    unsafe_allow_html=True,
 )
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-@st.cache_data(ttl=300, show_spinner=False)
-def fetch(sym, days):
-    c = CryptoDataCollector(symbols=[sym])
-    start = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
-    df = c.fetch_ohlcv(sym, start=start)
-    if df.empty:
-        return df, pd.Series(dtype=float)
-    return df, c.calculate_returns(df).dropna()
 
-
-def chart(height=320, **kw):
+def chart(height: int = 340, **layout_overrides):
     layout = {**CHART_LAYOUT, "height": height}
-    layout.update(kw)
+    layout.update(layout_overrides)
     return layout
 
 
-# ---------------------------------------------------------------------------
-# Header
-# ---------------------------------------------------------------------------
-st.title("Crypto Market Analytics Platform")
-st.markdown(
-    '<p style="color: #94a3b8; font-size: 1.05rem; margin-top: -10px;">'
-    'Volatility forecasting, risk monitoring, and market insights for crypto assets'
-    '</p>', unsafe_allow_html=True,
-)
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-if not run:
-    # Landing page
-    st.markdown("---")
-
-    c1, c2, c3, c4 = st.columns(4)
-    c1.markdown("""
-    #### Data Pipeline
-    Processes thousands of daily OHLCV observations across BTC, ETH,
-    and altcoin markets. Computes log returns and rolling realised volatility.
-    """)
-    c2.markdown("""
-    #### Forecasting
-    GARCH(1,1) captures volatility clustering with walk-forward
-    backtesting against naive baselines. Statistical significance
-    verified via Diebold-Mariano test.
-    """)
-    c3.markdown("""
-    #### Risk Monitoring
-    Value-at-Risk and Expected Shortfall (CVaR) at configurable
-    confidence levels. Real-time volatility alerting flags regime
-    changes for position sizing decisions.
-    """)
-    c4.markdown("""
-    #### Model Validation
-    Out-of-sample direction accuracy, RMSE comparison across
-    models, and regime-aware performance analysis. No fake
-    claims -- every metric is computed live.
-    """)
-
-    st.markdown("---")
-    st.info("Select assets in the sidebar and click **Run Analysis** to start the pipeline.")
-    st.caption("Built with Python, arch, yfinance, scikit-learn, and Streamlit.")
-    st.stop()
-
-# Fetch data for all symbols
-all_data = {}
-total_rows = 0
-progress = st.progress(0, text="Fetching data...")
-for i, sym in enumerate(symbols):
-    df, rets = fetch(sym, days_back)
-    if not df.empty:
-        all_data[sym] = {"df": df, "returns": rets}
-        total_rows += len(df)
-    progress.progress((i + 1) / len(symbols), text=f"Loaded {sym}")
-progress.empty()
-
-if not all_data:
-    st.error("Could not fetch data. Check your connection.")
-    st.stop()
-
-total_pts = sum(len(d["df"]) * len(d["df"].columns) for d in all_data.values())
-
-# ===== TABS =====
-tab_overview, tab_vol, tab_risk, tab_backtest, tab_method = st.tabs([
-    "Market Overview",
-    "Volatility Analysis",
-    "Risk Monitoring",
-    "Model Validation",
-    "Methodology",
-])
-
-# =========================================================================
-# TAB 1: MARKET OVERVIEW
-# =========================================================================
-with tab_overview:
-    st.markdown("---")
-    k1, k2, k3, k4 = st.columns(4)
-    k1.metric("Assets", len(all_data))
-    k2.metric("Daily Observations", f"{total_rows:,}")
-    k3.metric("Data Points", f"{total_pts:,}")
-    k4.metric("Date Range", f"{days_back} days")
-
-    # Price charts
-    for sym, sd in all_data.items():
-        df = sd["df"]
-        col = "Close" if "Close" in df.columns else "close"
-        prices = df[col]
-        rets = sd["returns"]
-
-        st.subheader(sym)
-        pc, rc = st.columns([3, 2])
-
-        with pc:
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=prices.index, y=prices.values,
-                mode="lines", line=dict(color=COLORS["primary"], width=1.5),
-                fill="tozeroy", fillcolor="rgba(99, 102, 241, 0.08)",
-            ))
-            fig.update_layout(**chart(yaxis_title="USD", title=f"{sym} Price"))
-            st.plotly_chart(fig, use_container_width=True)
-
-        with rc:
-            fig = go.Figure()
-            colors_bar = [COLORS["danger"] if r < 0 else COLORS["success"]
-                          for r in rets.values]
-            fig.add_trace(go.Bar(
-                x=rets.index, y=rets.values,
-                marker_color=colors_bar, opacity=0.7,
-            ))
-            fig.update_layout(**chart(yaxis_title="Return", title="Daily Log Returns"))
-            st.plotly_chart(fig, use_container_width=True)
-
-        # quick stats
-        s1, s2, s3, s4, s5 = st.columns(5)
-        s1.metric("Mean Return", f"{rets.mean():.4%}")
-        s2.metric("Annualised Vol", f"{rets.std() * np.sqrt(365):.1%}")
-        s3.metric("Sharpe (ann.)", f"{rets.mean() / rets.std() * np.sqrt(365):.2f}"
-                  if rets.std() > 0 else "N/A")
-        s4.metric("Max Drawdown", f"{(prices / prices.cummax() - 1).min():.1%}")
-        s5.metric("Skewness", f"{float(rets.skew()):.2f}")
+def render_chart(fig: go.Figure, caption: str) -> None:
+    st.plotly_chart(fig, use_container_width=True)
+    st.caption(caption)
 
 
-# =========================================================================
-# TAB 2: VOLATILITY ANALYSIS
-# =========================================================================
-with tab_vol:
-    st.markdown("---")
-
-    for sym, sd in all_data.items():
-        st.subheader(sym)
-        rets = sd["returns"]
-        vol = CryptoDataCollector.calculate_volatility(rets, window=vol_window)
-
-        returns_pct = rets * 100
-        with st.spinner(f"Fitting GARCH(1,1) on {sym}..."):
-            garch = GARCHModel()
-            garch.fit(returns_pct)
-            summary = garch.get_model_summary()
-            cond_vol = summary["conditional_volatility"] / 100
-            fc_pct = garch.forecast(horizon=forecast_horizon)
-            forecast = fc_pct / 100
-
-        # Vol overlay
-        c1, c2 = st.columns(2)
-        with c1:
-            fig = go.Figure()
-            rv = vol.dropna()
-            fig.add_trace(go.Scatter(
-                x=rv.index, y=rv.values,
-                mode="lines", name=f"Realised ({vol_window}d)",
-                line=dict(color=COLORS["secondary"], width=1.2),
-            ))
-            fig.add_trace(go.Scatter(
-                x=cond_vol.index, y=cond_vol.values,
-                mode="lines", name="GARCH conditional",
-                line=dict(color=COLORS["warning"], width=1.2),
-            ))
-            fig.update_layout(**chart(
-                yaxis_title="Annualised vol",
-                title="Realised vs Conditional Volatility",
-                legend=dict(orientation="h", yanchor="bottom", y=1.02),
-            ))
-            st.plotly_chart(fig, use_container_width=True)
-
-        with c2:
-            # Forecast
-            bridge = pd.Series([cond_vol.iloc[-1]], index=[cond_vol.index[-1]])
-            fc_line = pd.concat([bridge, forecast])
-            tail = cond_vol.iloc[-60:]
-
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=tail.index, y=tail.values,
-                mode="lines", name="Recent",
-                line=dict(color=COLORS["warning"], width=1.5),
-            ))
-            fig.add_trace(go.Scatter(
-                x=fc_line.index, y=fc_line.values,
-                mode="lines+markers", name="Forecast",
-                line=dict(color=COLORS["success"], width=2.5, dash="dot"),
-                marker=dict(size=7),
-            ))
-            fig.update_layout(**chart(
-                yaxis_title="Daily vol",
-                title=f"{forecast_horizon}-Day Forecast",
-                legend=dict(orientation="h", yanchor="bottom", y=1.02),
-            ))
-            st.plotly_chart(fig, use_container_width=True)
-
-        # Regime detection
-        labels, threshold = detect_regimes(vol.dropna())
-        regime_pct_high = labels.mean()
-
-        # Model info
-        with st.expander(f"GARCH Parameters & Diagnostics ({sym})", expanded=False):
-            p1, p2, p3 = st.columns(3)
-            p1.metric("AIC", f"{summary['aic']:.1f}")
-            p2.metric("BIC", f"{summary['bic']:.1f}")
-            p3.metric("Log-Likelihood", f"{summary['log_likelihood']:.1f}")
-
-            params = summary["params"]
-            st.dataframe(
-                pd.DataFrame({"Parameter": params.keys(), "Estimate": [f"{v:.6f}" for v in params.values()]}),
-                use_container_width=True, hide_index=True,
-            )
-
-            # persistence
-            alpha = params.get("alpha[1]", 0)
-            beta = params.get("beta[1]", 0)
-            persistence = alpha + beta
-            st.metric("Volatility Persistence (alpha + beta)", f"{persistence:.4f}",
-                      help="Values close to 1.0 indicate highly persistent volatility (slow mean-reversion)")
-
-            st.dataframe(
-                pd.DataFrame({"Date": [d.strftime("%Y-%m-%d") for d in forecast.index],
-                               "Forecast Vol": [f"{v:.6f}" for v in forecast.values]}),
-                use_container_width=True, hide_index=True,
-            )
-
-    # GARCH spec comparison
-    st.markdown("---")
-    st.subheader("GARCH Specification Comparison")
-    first_sym = list(all_data.keys())[0]
-    r0 = all_data[first_sym]["returns"] * 100
-    with st.spinner("Comparing models..."):
-        comp = compare_garch_models(r0, {
-            "GARCH(1,1)": (1, 1), "GARCH(1,2)": (1, 2),
-            "GARCH(2,1)": (2, 1), "GARCH(2,2)": (2, 2),
-        })
-    rows = []
-    for name, res in comp.items():
-        if "error" not in res:
-            rows.append({"Model": name, "AIC": res["aic"], "BIC": res["bic"],
-                          "Log-Likelihood": res["log_likelihood"]})
-    if rows:
-        cdf = pd.DataFrame(rows)
-        best = cdf.loc[cdf["AIC"].idxmin(), "Model"]
-        st.dataframe(cdf.style.format({"AIC": "{:.1f}", "BIC": "{:.1f}", "Log-Likelihood": "{:.1f}"}),
-                     use_container_width=True, hide_index=True)
-        st.caption(f"Best model by AIC: **{best}** (lower = better)")
+def cumulative_curve(returns: pd.Series) -> pd.Series:
+    if returns.empty:
+        return pd.Series(dtype=float)
+    curve = (1.0 + returns.fillna(0.0)).cumprod() - 1.0
+    curve.name = "cumulative_return"
+    return curve
 
 
-# =========================================================================
-# TAB 3: RISK MONITORING
-# =========================================================================
-with tab_risk:
-    st.markdown("---")
-
-    for sym, sd in all_data.items():
-        st.subheader(f"{sym} Risk Dashboard")
-        rets = sd["returns"]
-        vol = CryptoDataCollector.calculate_volatility(rets, window=vol_window)
-
-        var_95 = calculate_var(rets.values, 0.05)
-        var_99 = calculate_var(rets.values, 0.01)
-        cvar_95 = calculate_cvar(rets.values, 0.05)
-        cvar_99 = calculate_cvar(rets.values, 0.01)
-
-        # KPIs
-        r1, r2, r3, r4 = st.columns(4)
-        r1.metric("VaR (95%)", f"{var_95:.2%}")
-        r2.metric("CVaR (95%)", f"{cvar_95:.2%}",
-                  help="Expected Shortfall: average loss on days beyond VaR")
-        r3.metric("VaR (99%)", f"{var_99:.2%}")
-        r4.metric("CVaR (99%)", f"{cvar_99:.2%}")
-
-        c1, c2 = st.columns(2)
-
-        # Return distribution with VaR/CVaR
-        with c1:
-            fig = go.Figure()
-            fig.add_trace(go.Histogram(
-                x=rets.values, nbinsx=80,
-                marker_color=COLORS["primary"], opacity=0.7,
-            ))
-            fig.add_vline(x=var_95, line_dash="dash", line_color=COLORS["danger"],
-                          annotation_text=f"VaR 95%: {var_95:.2%}")
-            fig.add_vline(x=cvar_95, line_dash="dot", line_color=COLORS["warning"],
-                          annotation_text=f"CVaR 95%: {cvar_95:.2%}")
-            fig.update_layout(**chart(
-                xaxis_title="Daily return", yaxis_title="Count",
-                title="Return Distribution with Risk Thresholds",
-                showlegend=False,
-            ))
-            st.plotly_chart(fig, use_container_width=True)
-
-        # Volatility regime detection
-        with c2:
-            rv = vol.dropna()
-            labels, thresh = detect_regimes(rv)
-
-            fig = go.Figure()
-            low_mask = labels == 0
-            high_mask = labels == 1
-
-            fig.add_trace(go.Scatter(
-                x=rv.index[low_mask], y=rv.values[low_mask],
-                mode="markers", name="Low vol regime",
-                marker=dict(color=COLORS["success"], size=3, opacity=0.6),
-            ))
-            fig.add_trace(go.Scatter(
-                x=rv.index[high_mask], y=rv.values[high_mask],
-                mode="markers", name="High vol regime",
-                marker=dict(color=COLORS["danger"], size=3, opacity=0.6),
-            ))
-            fig.add_hline(y=thresh, line_dash="dash", line_color=COLORS["muted"],
-                          annotation_text=f"Regime threshold: {thresh:.1%}")
-
-            avg_vol = rv.mean()
-            fig.add_hline(y=avg_vol * alert_mult, line_dash="dot",
-                          line_color=COLORS["warning"],
-                          annotation_text=f"Alert ({alert_mult}x avg)")
-
-            fig.update_layout(**chart(
-                yaxis_title="Vol", title="Volatility Regime Detection",
-                legend=dict(orientation="h", yanchor="bottom", y=1.02),
-            ))
-            st.plotly_chart(fig, use_container_width=True)
-
-        # Alert status
-        current_vol = rv.iloc[-1] if len(rv) > 0 else 0
-        avg_vol = rv.mean() if len(rv) > 0 else 1
-        ratio = current_vol / avg_vol if avg_vol > 0 else 0
-        current_regime = "High" if labels.iloc[-1] == 1 else "Low"
-
-        a1, a2, a3 = st.columns(3)
-        a1.metric("Current Vol", f"{current_vol:.1%}")
-        a2.metric("Vol Regime", current_regime)
-        a3.metric("vs Average", f"{ratio:.1f}x")
-
-        if ratio >= alert_mult:
-            st.warning(
-                f"**ELEVATED VOLATILITY** -- {sym} current vol ({current_vol:.1%}) "
-                f"is {ratio:.1f}x historical average. Consider reducing exposure or "
-                f"tightening risk limits."
-            )
-        else:
-            st.success(
-                f"**Normal conditions** -- {sym} vol at {ratio:.1f}x average. "
-                f"Within acceptable range."
-            )
-
-        # Tail analysis
-        with st.expander(f"Tail Risk Analysis ({sym})"):
-            # worst days
-            worst = rets.nsmallest(10)
-            st.markdown("**10 Worst Daily Returns**")
-            st.dataframe(
-                pd.DataFrame({"Date": worst.index.strftime("%Y-%m-%d"),
-                               "Return": [f"{v:.2%}" for v in worst.values]}),
-                use_container_width=True, hide_index=True,
-            )
-
-            # VaR exceedances
-            exceedances = (rets < var_95).sum()
-            expected = len(rets) * 0.05
-            st.markdown(
-                f"**VaR Backtest:** {exceedances} days exceeded 95% VaR "
-                f"(expected ~{expected:.0f} out of {len(rets)} days). "
-                f"{'Model is well-calibrated.' if abs(exceedances - expected) / expected < 0.3 else 'Model may need recalibration.'}"
-            )
+def format_factor_name(name: str) -> str:
+    return name.replace("_", " ").title()
 
 
-# =========================================================================
-# TAB 4: MODEL VALIDATION
-# =========================================================================
-with tab_backtest:
-    st.markdown("---")
+@st.cache_data(show_spinner=False)
+def load_crypto_summary() -> pd.DataFrame:
+    return pd.read_csv(CRYPTO_SAMPLE_DIR / "summary.csv").set_index("symbol")
 
-    for sym, sd in all_data.items():
-        st.subheader(f"{sym} Walk-Forward Backtest")
 
-        rets = sd["returns"]
-        returns_pct = rets * 100
-        bt_window = min(252, len(returns_pct) // 3)
+@st.cache_data(show_spinner=False)
+def load_crypto_strategy(symbol: str) -> pd.DataFrame:
+    path = CRYPTO_SAMPLE_DIR / f"{symbol.replace('-', '_')}_strategy.csv"
+    if not path.exists():
+        return pd.DataFrame()
+    return pd.read_csv(path, index_col=0, parse_dates=True).sort_index()
 
-        if len(returns_pct) < bt_window + 20:
-            st.warning(f"Not enough data for {sym} backtest. Need more history.")
-            continue
 
-        with st.spinner(f"Running walk-forward backtest for {sym} (this takes a moment)..."):
-            try:
-                garch_bt, baselines, dm_tests = run_full_backtest(
-                    returns_pct, window=bt_window, step=5
-                )
-            except Exception as e:
-                st.error(f"Backtest failed: {e}")
-                continue
+@st.cache_data(show_spinner=False)
+def load_crypto_sample_asset(symbol: str, days: int, vol_window: int, forecast_horizon: int) -> dict:
+    market = load_sample_market_data(symbol, days=days)
+    returns = market["returns"].dropna()
+    prices = market["Close"]
+    realised_vol = CryptoDataCollector.calculate_volatility(returns, window=vol_window)
+    conditional_vol = market.get("conditional_vol", pd.Series(dtype=float)).dropna()
+    forecast = load_sample_forecast(symbol).head(forecast_horizon)
+    summary = {}
+    crypto_summary = load_crypto_summary()
+    if symbol in crypto_summary.index:
+        summary = crypto_summary.loc[symbol].to_dict()
 
-        # Performance comparison table
-        all_models = {"GARCH(1,1)": garch_bt, **baselines}
-        perf_rows = []
-        for name, res in all_models.items():
-            perf_rows.append({
-                "Model": name,
-                "RMSE": res.rmse,
-                "MAE": res.mae,
-                "Direction Acc.": res.direction_accuracy,
-                "Windows": res.n_windows,
-            })
+    strategy = load_crypto_strategy(symbol)
+    benchmark_curve = pd.Series(dtype=float)
+    strategy_curve = pd.Series(dtype=float)
+    if not strategy.empty:
+        aligned_benchmark = returns.loc[returns.index.intersection(strategy.index)]
+        if not aligned_benchmark.empty:
+            benchmark_curve = cumulative_curve(aligned_benchmark)
+        strategy_curve = cumulative_curve(strategy["strategy_returns"])
 
-        perf_df = pd.DataFrame(perf_rows)
-        best_rmse_model = perf_df.loc[perf_df["RMSE"].idxmin(), "Model"]
+    return {
+        "symbol": symbol,
+        "source": "Precomputed sample output",
+        "notice": "",
+        "prices": prices,
+        "returns": returns,
+        "realised_vol": realised_vol,
+        "conditional_vol": conditional_vol,
+        "forecast": forecast,
+        "summary": summary,
+        "strategy": strategy,
+        "strategy_curve": strategy_curve,
+        "benchmark_curve": benchmark_curve,
+        "price_axis": "Normalized Price Index (base = 100)",
+        "price_title": f"{symbol} Demo Price Path",
+    }
 
-        st.dataframe(
-            perf_df.style.format({
-                "RMSE": "{:.4f}", "MAE": "{:.4f}",
-                "Direction Acc.": "{:.1%}",
-            }).highlight_min(subset=["RMSE", "MAE"], color="#065f46")
-             .highlight_max(subset=["Direction Acc."], color="#065f46"),
-            use_container_width=True, hide_index=True,
+
+@st.cache_data(ttl=300, show_spinner=False)
+def load_live_crypto_asset(symbol: str, days: int, vol_window: int, forecast_horizon: int) -> dict:
+    collector = CryptoDataCollector(symbols=[symbol])
+    start = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    df = collector.fetch_ohlcv(symbol, start=start)
+    if df.empty:
+        raise ValueError("live data provider returned no rows")
+
+    returns = collector.calculate_returns(df).dropna()
+    if returns.empty:
+        raise ValueError("no return series available")
+
+    price_column = "Close" if "Close" in df.columns else "close"
+    prices = df[price_column]
+    realised_vol = CryptoDataCollector.calculate_volatility(returns, window=vol_window)
+
+    conditional_vol = pd.Series(dtype=float)
+    forecast = pd.Series(dtype=float)
+    diagnostics = {}
+    params_table = pd.DataFrame()
+    validation_table = pd.DataFrame()
+
+    if len(returns) >= 90:
+        scaled_returns = returns * 100.0
+        garch = GARCHModel()
+        garch.fit(scaled_returns)
+        summary = garch.get_model_summary()
+        conditional_vol = summary["conditional_volatility"] / 100.0
+        forecast = garch.forecast(horizon=forecast_horizon) / 100.0
+        diagnostics = {
+            "aic": summary["aic"],
+            "bic": summary["bic"],
+            "log_likelihood": summary["log_likelihood"],
+        }
+        params_table = pd.DataFrame(
+            {
+                "Parameter": list(summary["params"].keys()),
+                "Estimate": list(summary["params"].values()),
+            }
         )
 
-        # Key metrics callout
-        b1, b2, b3 = st.columns(3)
-        b1.metric("GARCH Direction Accuracy", f"{garch_bt.direction_accuracy:.0%}")
-        b2.metric("Best Model (RMSE)", best_rmse_model)
-        b3.metric("OOS Eval Windows", garch_bt.n_windows)
-
-        # Diebold-Mariano tests
-        if dm_tests:
-            st.markdown("**Diebold-Mariano Test (GARCH vs Baselines)**")
-            dm_rows = []
-            for name, (stat, pval) in dm_tests.items():
-                if np.isnan(stat):
-                    continue
-                sig = "Yes" if pval < 0.05 else "No"
-                better = "GARCH" if stat < 0 else name
-                dm_rows.append({
-                    "Comparison": f"GARCH vs {name}",
-                    "DM Statistic": stat,
-                    "p-value": pval,
-                    "Significant (5%)": sig,
-                    "Better Model": better,
-                })
-            if dm_rows:
-                st.dataframe(
-                    pd.DataFrame(dm_rows).style.format(
-                        {"DM Statistic": "{:.3f}", "p-value": "{:.4f}"}),
-                    use_container_width=True, hide_index=True,
+        if len(scaled_returns) >= 272:
+            backtest_window = min(252, len(scaled_returns) // 3)
+            if len(scaled_returns) >= backtest_window + 20:
+                garch_bt, baselines, _ = run_full_backtest(
+                    scaled_returns, window=backtest_window, step=5
                 )
-                st.caption(
-                    "Negative DM statistic = GARCH has smaller loss. "
-                    "p < 0.05 means the difference is statistically significant."
+                rows = [
+                    {
+                        "Model": "GARCH(1,1)",
+                        "RMSE": garch_bt.rmse,
+                        "MAE": garch_bt.mae,
+                        "Direction Accuracy": garch_bt.direction_accuracy,
+                        "Windows": garch_bt.n_windows,
+                    }
+                ]
+                for name, result in baselines.items():
+                    rows.append(
+                        {
+                            "Model": name,
+                            "RMSE": result.rmse,
+                            "MAE": result.mae,
+                            "Direction Accuracy": result.direction_accuracy,
+                            "Windows": result.n_windows,
+                        }
+                    )
+                validation_table = pd.DataFrame(rows)
+
+    return {
+        "symbol": symbol,
+        "source": "Live Yahoo Finance",
+        "notice": "",
+        "prices": prices,
+        "returns": returns,
+        "realised_vol": realised_vol,
+        "conditional_vol": conditional_vol,
+        "forecast": forecast,
+        "summary": diagnostics,
+        "params_table": params_table,
+        "validation_table": validation_table,
+        "strategy": pd.DataFrame(),
+        "strategy_curve": pd.Series(dtype=float),
+        "benchmark_curve": pd.Series(dtype=float),
+        "price_axis": "Spot Price (USD)",
+        "price_title": f"{symbol} Spot Price",
+    }
+
+
+def get_crypto_asset(symbol: str, use_live: bool, days: int, vol_window: int, forecast_horizon: int) -> dict:
+    if use_live:
+        try:
+            return load_live_crypto_asset(symbol, days, vol_window, forecast_horizon)
+        except Exception:
+            if sample_data_exists(symbol):
+                asset = load_crypto_sample_asset(symbol, days, vol_window, min(forecast_horizon, 10))
+                asset["source"] = "Precomputed sample output (live fallback)"
+                asset["notice"] = (
+                    f"Live Yahoo Finance data was unavailable for {symbol}, so this view fell back to the committed sample output."
                 )
+                return asset
+            return {
+                "symbol": symbol,
+                "error": "Live data was unavailable and no committed sample output exists for this asset.",
+            }
+    if not sample_data_exists(symbol):
+        return {
+            "symbol": symbol,
+            "error": "No committed sample output exists for this asset.",
+        }
+    return load_crypto_sample_asset(symbol, days, vol_window, min(forecast_horizon, 10))
 
-        # OOS charts
-        c1, c2 = st.columns(2)
-        with c1:
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=garch_bt.actuals.values, y=garch_bt.forecasts.values,
-                mode="markers", marker=dict(color=COLORS["primary"], size=4, opacity=0.5),
-            ))
-            mn = min(garch_bt.actuals.min(), garch_bt.forecasts.min())
-            mx = max(garch_bt.actuals.max(), garch_bt.forecasts.max())
-            fig.add_trace(go.Scatter(
-                x=[mn, mx], y=[mn, mx], mode="lines",
-                line=dict(color=COLORS["danger"], dash="dash", width=1),
-                showlegend=False,
-            ))
-            fig.update_layout(**chart(
-                title="Forecast vs Actual (OOS)",
-                xaxis_title="Actual |return| (%)",
-                yaxis_title="GARCH forecast (%)",
-            ))
-            st.plotly_chart(fig, use_container_width=True)
 
-        with c2:
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=garch_bt.actuals.index, y=garch_bt.actuals.values,
-                mode="lines", name="Actual |return|",
-                line=dict(color=COLORS["secondary"], width=1),
-            ))
-            fig.add_trace(go.Scatter(
-                x=garch_bt.forecasts.index, y=garch_bt.forecasts.values,
-                mode="lines", name="GARCH forecast",
-                line=dict(color=COLORS["warning"], width=1),
-            ))
-            fig.update_layout(**chart(
-                title="Rolling OOS Timeseries",
-                yaxis_title="Volatility (%)",
+@st.cache_data(show_spinner=False)
+def load_factor_outputs() -> dict:
+    summary = pd.read_csv(FACTOR_SAMPLE_DIR / "summary.csv").iloc[0]
+    metadata = pd.read_csv(FACTOR_SAMPLE_DIR / "run_metadata.csv").iloc[0]
+    latest_screen = pd.read_csv(FACTOR_SAMPLE_DIR / "latest_screen.csv").sort_values("screen_rank")
+    exposures = pd.read_csv(FACTOR_SAMPLE_DIR / "factor_exposures.csv", index_col=0)["beta"]
+    strategy_returns = pd.read_csv(
+        FACTOR_SAMPLE_DIR / "strategy_returns.csv", index_col=0, parse_dates=True
+    ).sort_index()
+    screen_metrics = pd.read_csv(FACTOR_SAMPLE_DIR / "screening_model_metrics.csv").iloc[0]
+    model_coefficients = pd.read_csv(
+        FACTOR_SAMPLE_DIR / "screening_model_coefficients.csv", index_col=0
+    )["coefficient"].sort_values(ascending=False)
+    top_ideas_md = (FACTOR_SAMPLE_DIR / "top_quantamental_ideas.md").read_text()
+    return {
+        "summary": summary,
+        "metadata": metadata,
+        "latest_screen": latest_screen,
+        "exposures": exposures,
+        "strategy_returns": strategy_returns,
+        "screen_metrics": screen_metrics,
+        "model_coefficients": model_coefficients,
+        "top_ideas_md": top_ideas_md,
+    }
+
+
+def render_overview_tab() -> None:
+    st.markdown(
+        """
+This repository brings together three applied quant projects: crypto volatility forecasting and risk management, cross-sectional equity factor research, and derivatives pricing. Each project is runnable on its own, and the committed sample artifacts make the full portfolio reviewable without setup.
+
+Taken together, the repo demonstrates end-to-end quantitative engineering: data collection, feature construction, statistical modeling, validation, risk measurement, and presentation in a testable Python codebase.
+"""
+    )
+
+    cards = st.columns(3)
+    cards[0].markdown(
+        """
+<div class="portfolio-card">
+  <h3>Crypto Volatility Risk Engine</h3>
+  <p>GARCH-based volatility forecasting, walk-forward validation, VaR/CVaR analytics, and volatility-managed overlays for BTC and ETH research workflows.</p>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+    cards[1].markdown(
+        """
+<div class="portfolio-card">
+  <h3>Quantamental Equity Research Platform</h3>
+  <p>Value, momentum, and quality ranking, logistic screening, factor attribution, and thesis generation for a systematic equity research stack.</p>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+    cards[2].markdown(
+        """
+<div class="portfolio-card">
+  <h3>Options Pricing Toolkit</h3>
+  <p>Black-Scholes pricing, Greeks, Monte Carlo simulation, and American option trees for derivatives valuation and scenario analysis.</p>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("---")
+    st.markdown(
+        """
+<div class="source-note">
+Use the tabs above to inspect each project. The crypto tab defaults to committed sample data for instant loading, the factor tab uses precomputed sample research artifacts, and the options tab is fully interactive and stateless.
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+
+
+def render_crypto_validation(asset: dict) -> None:
+    st.markdown("#### Validation Snapshot")
+    summary = asset.get("summary", {})
+    validation_table = asset.get("validation_table", pd.DataFrame())
+
+    if not validation_table.empty:
+        display_validation = validation_table.copy()
+        display_validation["Direction Accuracy"] = display_validation["Direction Accuracy"] * 100.0
+        st.dataframe(
+            display_validation,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "RMSE": st.column_config.NumberColumn(format="%.3f"),
+                "MAE": st.column_config.NumberColumn(format="%.3f"),
+                "Direction Accuracy": st.column_config.NumberColumn(format="%.1f%%"),
+            },
+        )
+    elif summary:
+        snapshot = pd.DataFrame(
+            [
+                {"Metric": "GARCH OOS RMSE", "Value": f"{summary.get('garch_backtest_rmse', np.nan):.3f}"},
+                {
+                    "Metric": "Direction Accuracy",
+                    "Value": f"{summary.get('garch_backtest_direction_accuracy', np.nan):.1%}",
+                },
+                {"Metric": "Vol-Managed Sharpe", "Value": f"{summary.get('strategy_sharpe_ratio', np.nan):.2f}"},
+                {
+                    "Metric": "Vol-Managed Max Drawdown",
+                    "Value": f"{summary.get('strategy_max_drawdown', np.nan):.1%}",
+                },
+                {
+                    "Metric": "Average Leverage",
+                    "Value": f"{summary.get('strategy_average_leverage', np.nan):.2f}x",
+                },
+            ]
+        )
+        st.table(snapshot)
+    else:
+        st.caption("Validation metrics are unavailable for this live selection.")
+
+    strategy_curve = asset.get("strategy_curve", pd.Series(dtype=float))
+    benchmark_curve = asset.get("benchmark_curve", pd.Series(dtype=float))
+    if not strategy_curve.empty and not benchmark_curve.empty:
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=strategy_curve.index,
+                y=strategy_curve.values,
+                mode="lines",
+                name="Vol-managed overlay",
+                line=dict(color=COLORS["primary"], width=2.2),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=benchmark_curve.index,
+                y=benchmark_curve.values,
+                mode="lines",
+                name="Buy and hold",
+                line=dict(color=COLORS["muted"], width=2.0, dash="dot"),
+            )
+        )
+        fig.update_layout(
+            **chart(
+                title="Volatility-Managed Overlay vs Buy-and-Hold",
+                xaxis_title="Date",
+                yaxis_title="Cumulative Return (%)",
                 legend=dict(orientation="h", yanchor="bottom", y=1.02),
-            ))
-            st.plotly_chart(fig, use_container_width=True)
+            )
+        )
+        fig.update_yaxes(tickformat=".0%")
+        render_chart(
+            fig,
+            "Compares the precomputed volatility-targeted overlay with the underlying asset over the same period, showing how forecast-driven sizing changed the return path.",
+        )
+
+    params_table = asset.get("params_table", pd.DataFrame())
+    if not params_table.empty:
+        with st.expander("Live GARCH Diagnostics", expanded=False):
+            diag_cols = st.columns(3)
+            diag_cols[0].metric("AIC", f"{summary.get('aic', np.nan):.1f}")
+            diag_cols[1].metric("BIC", f"{summary.get('bic', np.nan):.1f}")
+            diag_cols[2].metric("Log-Likelihood", f"{summary.get('log_likelihood', np.nan):.1f}")
+            st.dataframe(
+                params_table,
+                use_container_width=True,
+                hide_index=True,
+                column_config={"Estimate": st.column_config.NumberColumn(format="%.6f")},
+            )
 
 
-# =========================================================================
-# TAB 5: METHODOLOGY
-# =========================================================================
-with tab_method:
-    st.markdown("---")
+def render_crypto_asset(asset: dict, vol_window: int, forecast_horizon: int) -> None:
+    if asset.get("error"):
+        st.warning(asset["error"])
+        return
 
-    st.markdown("""
-    ### Approach
+    symbol = asset["symbol"]
+    prices = asset["prices"]
+    returns = asset["returns"]
+    realised_vol = asset["realised_vol"].dropna()
+    conditional_vol = asset["conditional_vol"].dropna()
+    forecast = asset["forecast"].dropna()
+    summary = asset.get("summary", {})
 
-    This platform implements a complete volatility forecasting pipeline for cryptocurrency
-    markets. The core methodology uses **GARCH(1,1)** (Generalized Autoregressive Conditional
-    Heteroskedasticity), a standard model in financial econometrics for capturing
-    **volatility clustering** -- the empirical tendency for large price moves to be
-    followed by more large moves.
+    st.subheader(symbol)
+    st.caption(f"Source: {asset['source']}")
+    if asset.get("notice"):
+        st.caption(asset["notice"])
 
-    ### Data
+    annual_vol = returns.std() * np.sqrt(365.0)
+    var_95 = calculate_var(returns.values, 0.05)
+    current_vol = realised_vol.iloc[-1] if not realised_vol.empty else np.nan
+    forecast_last = forecast.iloc[-1] if not forecast.empty else np.nan
 
-    Daily OHLCV data sourced from Yahoo Finance. Log returns are computed as
-    r_t = ln(P_t / P_{t-1}). Annualised volatility uses a sqrt(365) scaling factor
-    since crypto markets trade 24/7/365, unlike equities (sqrt(252)).
+    metric_cols = st.columns(5)
+    metric_cols[0].metric("Observations", f"{len(returns):,}")
+    metric_cols[1].metric("Annualized Vol", f"{annual_vol:.1%}")
+    metric_cols[2].metric("VaR (95%)", f"{var_95:.2%}")
+    if asset["source"].startswith("Precomputed"):
+        metric_cols[3].metric("GARCH OOS RMSE", f"{summary.get('garch_backtest_rmse', np.nan):.3f}")
+        metric_cols[4].metric("Forecast End", f"{forecast_last:.2%}")
+    else:
+        metric_cols[3].metric("Current Realized Vol", f"{current_vol:.2%}")
+        metric_cols[4].metric("Forecast End", f"{forecast_last:.2%}")
 
-    ### GARCH(1,1) Model
+    c1, c2 = st.columns(2)
+    with c1:
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=prices.index,
+                y=prices.values,
+                mode="lines",
+                line=dict(color=COLORS["primary"], width=2.0),
+                fill="tozeroy",
+                fillcolor="rgba(15, 118, 110, 0.10)",
+            )
+        )
+        fig.update_layout(
+            **chart(
+                title=asset["price_title"],
+                xaxis_title="Date",
+                yaxis_title=asset["price_axis"],
+            )
+        )
+        render_chart(
+            fig,
+            "Shows the asset price path used in the volatility analysis. In sample mode the price is reconstructed as a normalized index so the dashboard remains read-only and instant to load.",
+        )
 
-    The conditional variance follows:
+    with c2:
+        fig = go.Figure()
+        bar_colors = [COLORS["danger"] if value < 0 else COLORS["success"] for value in returns.values]
+        fig.add_trace(
+            go.Bar(
+                x=returns.index,
+                y=returns.values,
+                marker_color=bar_colors,
+                opacity=0.75,
+            )
+        )
+        fig.update_layout(
+            **chart(
+                title="Daily Log Returns",
+                xaxis_title="Date",
+                yaxis_title="Log Return",
+            )
+        )
+        render_chart(
+            fig,
+            "Highlights the distribution and clustering of positive and negative daily moves, which is the raw input for the volatility and risk models.",
+        )
 
-    > sigma_t^2 = omega + alpha * r_{t-1}^2 + beta * sigma_{t-1}^2
+    c3, c4 = st.columns(2)
+    with c3:
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=realised_vol.index,
+                y=realised_vol.values,
+                mode="lines",
+                name=f"Realized ({vol_window}d)",
+                line=dict(color=COLORS["accent"], width=2.0),
+            )
+        )
+        if not conditional_vol.empty:
+            fig.add_trace(
+                go.Scatter(
+                    x=conditional_vol.index,
+                    y=conditional_vol.values,
+                    mode="lines",
+                    name="Conditional",
+                    line=dict(color=COLORS["warning"], width=2.0),
+                )
+            )
+        fig.update_layout(
+            **chart(
+                title="Realized vs Conditional Volatility",
+                xaxis_title="Date",
+                yaxis_title="Annualized Volatility",
+                legend=dict(orientation="h", yanchor="bottom", y=1.02),
+            )
+        )
+        fig.update_yaxes(tickformat=".0%")
+        render_chart(
+            fig,
+            "Compares observed rolling volatility with the model-implied conditional volatility, showing whether the process captures volatility clustering.",
+        )
 
-    Where:
-    - **omega**: long-run variance floor
-    - **alpha**: reaction to recent shocks (higher = more responsive)
-    - **beta**: persistence of past variance (higher = slower decay)
-    - **alpha + beta**: persistence parameter (close to 1.0 = highly persistent)
+    with c4:
+        fig = go.Figure()
+        recent_conditional = conditional_vol.tail(60)
+        if not recent_conditional.empty:
+            fig.add_trace(
+                go.Scatter(
+                    x=recent_conditional.index,
+                    y=recent_conditional.values,
+                    mode="lines",
+                    name="Recent conditional vol",
+                    line=dict(color=COLORS["muted"], width=1.8),
+                )
+            )
+            bridge_index = [recent_conditional.index[-1]] + list(forecast.index)
+            bridge_values = [recent_conditional.iloc[-1]] + list(forecast.values)
+            fig.add_trace(
+                go.Scatter(
+                    x=bridge_index,
+                    y=bridge_values,
+                    mode="lines+markers",
+                    name="Forward forecast",
+                    line=dict(color=COLORS["primary"], width=2.6, dash="dot"),
+                    marker=dict(size=7),
+                )
+            )
+        else:
+            fig.add_trace(
+                go.Scatter(
+                    x=forecast.index,
+                    y=forecast.values,
+                    mode="lines+markers",
+                    name="Forward forecast",
+                    line=dict(color=COLORS["primary"], width=2.6, dash="dot"),
+                    marker=dict(size=7),
+                )
+            )
+        fig.update_layout(
+            **chart(
+                title=f"{forecast_horizon}-Day Volatility Forecast",
+                xaxis_title="Date",
+                yaxis_title="Forecast Daily Volatility",
+                legend=dict(orientation="h", yanchor="bottom", y=1.02),
+            )
+        )
+        fig.update_yaxes(tickformat=".1%")
+        render_chart(
+            fig,
+            "Shows the near-term volatility forecast used for risk planning and position sizing, bridging the most recent model state into the forward horizon.",
+        )
 
-    Returns are scaled to percentage for numerical stability during optimisation.
-    Model selection across GARCH(p,q) specifications uses AIC/BIC.
+    c5, c6 = st.columns(2)
+    cvar_95 = calculate_cvar(returns.values, 0.05)
+    with c5:
+        fig = go.Figure()
+        fig.add_trace(
+            go.Histogram(
+                x=returns.values,
+                nbinsx=70,
+                marker_color=COLORS["secondary"],
+                opacity=0.72,
+            )
+        )
+        fig.add_vline(
+            x=var_95,
+            line_dash="dash",
+            line_color=COLORS["danger"],
+            annotation_text=f"VaR 95%: {var_95:.2%}",
+        )
+        fig.add_vline(
+            x=cvar_95,
+            line_dash="dot",
+            line_color=COLORS["warning"],
+            annotation_text=f"CVaR 95%: {cvar_95:.2%}",
+        )
+        fig.update_layout(
+            **chart(
+                title="Return Distribution with VaR and CVaR",
+                xaxis_title="Daily Log Return",
+                yaxis_title="Observation Count",
+                showlegend=False,
+            )
+        )
+        render_chart(
+            fig,
+            "Plots the empirical return distribution and tail-risk thresholds, showing both the expected cutoff loss and the average loss beyond that cutoff.",
+        )
 
-    ### Walk-Forward Backtesting
+    with c6:
+        fig = go.Figure()
+        if not realised_vol.empty:
+            labels, threshold = detect_regimes(realised_vol)
+            low_mask = labels == 0
+            high_mask = labels == 1
+            fig.add_trace(
+                go.Scatter(
+                    x=realised_vol.index[low_mask],
+                    y=realised_vol.values[low_mask],
+                    mode="markers",
+                    name="Low-vol regime",
+                    marker=dict(color=COLORS["success"], size=4, opacity=0.7),
+                )
+            )
+            fig.add_trace(
+                go.Scatter(
+                    x=realised_vol.index[high_mask],
+                    y=realised_vol.values[high_mask],
+                    mode="markers",
+                    name="High-vol regime",
+                    marker=dict(color=COLORS["danger"], size=4, opacity=0.7),
+                )
+            )
+            fig.add_hline(
+                y=threshold,
+                line_dash="dash",
+                line_color=COLORS["muted"],
+                annotation_text=f"Threshold: {threshold:.1%}",
+            )
+        fig.update_layout(
+            **chart(
+                title="Volatility Regime Detection",
+                xaxis_title="Date",
+                yaxis_title="Annualized Volatility",
+                legend=dict(orientation="h", yanchor="bottom", y=1.02),
+            )
+        )
+        fig.update_yaxes(tickformat=".0%")
+        render_chart(
+            fig,
+            "Classifies the realized volatility history into calmer and stressed regimes, which is useful for explaining risk state changes instead of just reporting a single average.",
+        )
 
-    At each step t, the model is fit on a rolling window of past returns and produces
-    a 1-step-ahead volatility forecast. This forecast is compared to the realised
-    volatility proxy (|r_t|). Three naive baselines provide context:
+    render_crypto_validation(asset)
 
-    - **Historical volatility**: rolling standard deviation
-    - **EWMA** (lambda=0.94): exponentially weighted moving average (RiskMetrics approach)
-    - **Random walk**: yesterday's absolute return
 
-    The **Diebold-Mariano test** checks whether GARCH's forecast improvement
-    over each baseline is statistically significant (H0: equal predictive accuracy).
+def render_crypto_tab() -> None:
+    st.markdown("### Crypto Volatility Risk Engine")
 
-    ### Risk Metrics
+    controls_left, controls_right = st.columns([1.3, 2.2])
+    with controls_left:
+        use_live = st.toggle(
+            "Use live Yahoo Finance data",
+            value=False,
+            help="Default sample mode uses committed research artifacts so the portfolio opens instantly.",
+        )
+        days_back = st.slider("History (days)", 365, 1825, 730, step=30)
+        vol_window = st.slider("Volatility window", 7, 90, 30)
+        horizon_cap = 30 if use_live else 10
+        forecast_horizon = st.slider(
+            "Forecast horizon (days)",
+            1,
+            horizon_cap,
+            min(10, horizon_cap),
+        )
 
-    - **Value-at-Risk (VaR)**: the q-th percentile of the return distribution.
-      At 95%, it answers "what is the worst daily loss we expect to see 19 out of 20 days?"
-    - **Expected Shortfall (CVaR)**: the average loss conditional on exceeding VaR.
-      More informative than VaR because it captures tail severity, not just frequency.
-      CVaR is a **coherent risk measure** (sub-additive), while VaR is not.
-    - **VaR backtest**: counts actual exceedances vs expected to check model calibration.
+    with controls_right:
+        asset_choices = CRYPTO_LIVE_AVAILABLE if use_live else CRYPTO_SAMPLE_AVAILABLE
+        default_symbols = [sym for sym in ["BTC-USD", "ETH-USD"] if sym in asset_choices] or asset_choices[:1]
+        symbols = st.multiselect(
+            "Assets",
+            asset_choices,
+            default=default_symbols,
+            max_selections=2,
+        )
+        st.caption(
+            "Sample mode is the default so the crypto tab renders from committed artifacts without any network dependency. Live mode keeps the same UI and quietly falls back to sample output if Yahoo Finance is unavailable."
+        )
 
-    ### Regime Detection
+    if not symbols:
+        st.info("Select at least one asset to render the crypto research view.")
+        return
 
-    A simple threshold-based approach splits the volatility series into low and high
-    regimes using the median as boundary. This helps identify market regime shifts
-    relevant to settlement risk and position sizing.
+    with st.spinner("Loading crypto analytics..."):
+        assets = [get_crypto_asset(symbol, use_live, days_back, vol_window, forecast_horizon) for symbol in symbols]
 
-    ### Limitations
+    valid_assets = [asset for asset in assets if not asset.get("error")]
+    if not valid_assets:
+        st.warning("No crypto data could be loaded for the current selection.")
+        return
 
-    - GARCH assumes normally distributed innovations; crypto returns have fat tails.
-      Extensions like GJR-GARCH or GARCH-t would better capture asymmetric tail risk.
-    - The random walk baseline is hard to beat consistently in short samples.
-    - Regime detection is threshold-based, not a proper Markov-switching model.
-    - Yahoo Finance data may have gaps or lag behind real-time exchange data.
-    - No intraday or orderbook-level analysis.
+    symbol_tabs = st.tabs([asset["symbol"] for asset in valid_assets])
+    for tab, asset in zip(symbol_tabs, valid_assets):
+        with tab:
+            render_crypto_asset(asset, vol_window=vol_window, forecast_horizon=forecast_horizon)
 
-    ### Tech Stack
 
-    Python, arch (GARCH), yfinance, scikit-learn, SciPy (statistical tests),
-    NumPy/Pandas, Plotly, Streamlit.
-    """)
+def render_factor_tab() -> None:
+    artifacts = load_factor_outputs()
+    summary = artifacts["summary"]
+    metadata = artifacts["metadata"]
+    screen_metrics = artifacts["screen_metrics"]
 
-    st.markdown("---")
-    st.caption("Source: github.com/astew24/quant-finance")
+    st.markdown("### Quantamental Equity Research Platform")
+    st.caption(
+        "This tab uses precomputed sample output from `factor_risk_model/output_sample/` so the portfolio remains fully stateless, read-only, and quick to review."
+    )
+
+    metric_cols = st.columns(5)
+    metric_cols[0].metric("Total Return", f"{summary['total_return']:.1%}")
+    metric_cols[1].metric("Sharpe Ratio", f"{summary['sharpe_ratio']:.2f}")
+    metric_cols[2].metric("Mean IC", f"{summary['mean_information_coefficient']:.3f}")
+    metric_cols[3].metric("Holdout Accuracy", f"{screen_metrics['holdout_accuracy']:.1%}")
+    metric_cols[4].metric("Holdout ROC AUC", f"{screen_metrics['holdout_roc_auc']:.3f}")
+
+    st.caption(
+        f"Backtest window: {metadata['start_date']} to {metadata['end_date']}. "
+        f"Backtest universe: {metadata['backtest_universe']} ({int(metadata['backtest_universe_size'])} names). "
+        f"Screening universe: {metadata['screening_universe']} ({int(metadata['screening_universe_size'])} names)."
+    )
+
+    strategy_returns = artifacts["strategy_returns"].copy()
+    strategy_curve = cumulative_curve(strategy_returns["strategy_returns"])
+    benchmark_curve = cumulative_curve(strategy_returns["benchmark_returns"])
+
+    c1, c2 = st.columns(2)
+    with c1:
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=strategy_curve.index,
+                y=strategy_curve.values,
+                mode="lines",
+                name="Long-short strategy",
+                line=dict(color=COLORS["primary"], width=2.5),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=benchmark_curve.index,
+                y=benchmark_curve.values,
+                mode="lines",
+                name="Equal-weight benchmark",
+                line=dict(color=COLORS["muted"], width=2.0, dash="dot"),
+            )
+        )
+        fig.update_layout(
+            **chart(
+                title="Strategy vs Benchmark Cumulative Return",
+                xaxis_title="Date",
+                yaxis_title="Cumulative Return (%)",
+                legend=dict(orientation="h", yanchor="bottom", y=1.02),
+            )
+        )
+        fig.update_yaxes(tickformat=".0%")
+        render_chart(
+            fig,
+            "Shows how the long-short factor strategy compounded against the benchmark, which matters because the backtest is the bridge from factor ideas to investable portfolio behavior.",
+        )
+
+    with c2:
+        exposures = artifacts["exposures"].rename(index=format_factor_name).sort_values()
+        fig = go.Figure()
+        fig.add_trace(
+            go.Bar(
+                x=exposures.values,
+                y=exposures.index,
+                orientation="h",
+                marker_color=[
+                    COLORS["success"] if value >= 0 else COLORS["danger"] for value in exposures.values
+                ],
+            )
+        )
+        fig.add_vline(x=0.0, line_color=COLORS["muted"], line_width=1)
+        fig.update_layout(
+            **chart(
+                title="Estimated Factor Exposures",
+                xaxis_title="Beta (unitless)",
+                yaxis_title="Factor Portfolio",
+                showlegend=False,
+            )
+        )
+        render_chart(
+            fig,
+            "Displays the regression betas of the strategy to the factor-mimicking portfolios, showing whether the realized return stream loaded on the intended signals instead of pure market beta.",
+        )
+
+    st.markdown("#### Latest Factor Screen")
+    st.caption(
+        "Sortable table from the latest screening snapshot. The ranks combine factor scores with the classifier’s outperformance probability."
+    )
+    latest_screen = artifacts["latest_screen"].copy()
+    display_screen = latest_screen[
+        [
+            "Ticker",
+            "name",
+            "sector",
+            "value_score",
+            "momentum_score",
+            "quality_score",
+            "factor_score",
+            "predicted_outperformance_probability",
+            "screen_score",
+            "screen_rank",
+            "currentPrice",
+            "targetMeanPrice",
+        ]
+    ].rename(
+        columns={
+            "name": "Company",
+            "sector": "Sector",
+            "value_score": "Value Score",
+            "momentum_score": "Momentum Score",
+            "quality_score": "Quality Score",
+            "factor_score": "Factor Score",
+            "predicted_outperformance_probability": "ML Outperf. Prob.",
+            "screen_score": "Composite Screen Score",
+            "screen_rank": "Screen Rank",
+            "currentPrice": "Price (USD)",
+            "targetMeanPrice": "Street Target (USD)",
+        }
+    )
+    display_screen["ML Outperf. Prob."] = display_screen["ML Outperf. Prob."] * 100.0
+    st.dataframe(
+        display_screen,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Value Score": st.column_config.NumberColumn(format="%.2f"),
+            "Momentum Score": st.column_config.NumberColumn(format="%.2f"),
+            "Quality Score": st.column_config.NumberColumn(format="%.2f"),
+            "Factor Score": st.column_config.NumberColumn(format="%.2f"),
+            "ML Outperf. Prob.": st.column_config.NumberColumn(format="%.1f%%"),
+            "Composite Screen Score": st.column_config.NumberColumn(format="%.2f"),
+            "Screen Rank": st.column_config.NumberColumn(format="%d"),
+            "Price (USD)": st.column_config.NumberColumn(format="$%.2f"),
+            "Street Target (USD)": st.column_config.NumberColumn(format="$%.2f"),
+        },
+    )
+
+    with st.expander("Classifier Coefficients", expanded=False):
+        coeffs = artifacts["model_coefficients"].rename(index=format_factor_name)
+        coeff_frame = coeffs.reset_index()
+        coeff_frame.columns = ["Feature", "Coefficient"]
+        st.dataframe(
+            coeff_frame,
+            use_container_width=True,
+            hide_index=True,
+            column_config={"Coefficient": st.column_config.NumberColumn(format="%.3f")},
+        )
+
+    st.markdown("#### Top Quantamental Ideas")
+    st.caption(
+        "Formatted markdown generated by the thesis layer, combining screening rank, valuation context, and a short narrative for the highest-ranked names."
+    )
+    st.markdown(artifacts["top_ideas_md"])
+
+
+def render_options_tab() -> None:
+    st.markdown("### Options Pricing Toolkit")
+    st.caption(
+        "This tab is fully interactive and stateless. It calls the repo’s analytical and numerical pricing functions directly, with no external data or API keys."
+    )
+
+    controls_col, summary_col = st.columns([1.1, 1.4])
+    with controls_col:
+        option_type = st.radio("Option Type", ["call", "put"], horizontal=True)
+        spot = st.slider("Spot Price S (USD)", 50.0, 150.0, 100.0, 1.0)
+        strike = st.slider("Strike K (USD)", 50.0, 150.0, 100.0, 1.0)
+        maturity = st.slider("Maturity T (years)", 0.10, 2.00, 1.00, 0.05)
+        rate = st.slider("Risk-Free Rate r (%)", 0.0, 10.0, 3.0, 0.25) / 100.0
+        sigma = st.slider("Volatility sigma (%)", 5.0, 80.0, 20.0, 1.0) / 100.0
+        with st.expander("Numerical Settings", expanded=False):
+            n_paths = st.slider("Monte Carlo Paths", 10_000, 100_000, 50_000, 5_000)
+            n_steps = st.slider("Binomial Steps", 50, 400, 200, 25)
+
+    with summary_col:
+        try:
+            bs_price = black_scholes_price(spot, strike, rate, sigma, maturity, option_type=option_type)
+            greeks = black_scholes_greeks(spot, strike, rate, sigma, maturity, option_type=option_type)
+            mc = monte_carlo_price(
+                spot,
+                strike,
+                rate,
+                sigma,
+                maturity,
+                option_type=option_type,
+                n_paths=n_paths,
+                seed=42,
+            )
+            american = american_option_binomial(
+                spot,
+                strike,
+                rate,
+                sigma,
+                maturity,
+                option_type=option_type,
+                n_steps=n_steps,
+            )
+        except Exception:
+            st.warning("The pricing inputs could not be evaluated for this scenario.")
+            return
+
+        summary_table = pd.DataFrame(
+            [
+                {"Metric": "Black-Scholes Price", "Value": bs_price},
+                {"Metric": "Delta", "Value": greeks["delta"]},
+                {"Metric": "Gamma", "Value": greeks["gamma"]},
+                {"Metric": "Vega", "Value": greeks["vega"]},
+                {"Metric": "Theta", "Value": greeks["theta"]},
+                {"Metric": "Rho", "Value": greeks["rho"]},
+            ]
+        )
+        st.table(summary_table.style.format({"Value": "{:.4f}"}))
+
+        comparison_table = pd.DataFrame(
+            [
+                {"Method": "Black-Scholes", "Price (USD)": bs_price, "Notes": "Closed-form European price"},
+                {
+                    "Method": "Monte Carlo",
+                    "Price (USD)": mc.price,
+                    "Notes": f"95% CI [{mc.confidence_interval_low:.4f}, {mc.confidence_interval_high:.4f}]",
+                },
+                {
+                    "Method": "American Tree",
+                    "Price (USD)": american,
+                    "Notes": "Cox-Ross-Rubinstein binomial tree",
+                },
+            ]
+        )
+        st.markdown("#### Pricing Method Comparison")
+        st.dataframe(
+            comparison_table,
+            use_container_width=True,
+            hide_index=True,
+            column_config={"Price (USD)": st.column_config.NumberColumn(format="$%.4f")},
+        )
+
+    c1, c2 = st.columns(2)
+    with c1:
+        expiry_spots = np.linspace(0.4 * spot, 1.6 * spot, 120)
+        if option_type == "call":
+            intrinsic = np.maximum(expiry_spots - strike, 0.0)
+            breakeven = strike + bs_price
+        else:
+            intrinsic = np.maximum(strike - expiry_spots, 0.0)
+            breakeven = strike - bs_price
+        pnl = intrinsic - bs_price
+
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=expiry_spots,
+                y=intrinsic,
+                mode="lines",
+                name="Intrinsic payoff",
+                line=dict(color=COLORS["primary"], width=2.4),
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=expiry_spots,
+                y=pnl,
+                mode="lines",
+                name="Net P/L after premium",
+                line=dict(color=COLORS["warning"], width=2.0, dash="dash"),
+            )
+        )
+        fig.add_hline(y=0.0, line_color=COLORS["muted"], line_width=1)
+        fig.add_vline(
+            x=breakeven,
+            line_color=COLORS["danger"],
+            line_dash="dot",
+            annotation_text=f"Breakeven: {breakeven:.2f}",
+        )
+        fig.update_layout(
+            **chart(
+                title="Expiry Payoff and Net P/L",
+                xaxis_title="Underlying Price at Expiry (USD)",
+                yaxis_title="Payoff / P&L (USD)",
+                legend=dict(orientation="h", yanchor="bottom", y=1.02),
+            )
+        )
+        render_chart(
+            fig,
+            "Shows the convex payoff profile and breakeven of the contract at expiry, which is the clearest way to explain option asymmetry to a reviewer.",
+        )
+
+    with c2:
+        vol_grid = np.linspace(0.05, 0.80, 60)
+        price_vs_vol = [
+            black_scholes_price(spot, strike, rate, float(vol), maturity, option_type=option_type)
+            for vol in vol_grid
+        ]
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=vol_grid * 100.0,
+                y=price_vs_vol,
+                mode="lines",
+                line=dict(color=COLORS["secondary"], width=2.4),
+            )
+        )
+        fig.add_vline(
+            x=sigma * 100.0,
+            line_color=COLORS["primary"],
+            line_dash="dot",
+            annotation_text=f"Selected sigma: {sigma:.0%}",
+        )
+        fig.update_layout(
+            **chart(
+                title="Option Value vs Implied Volatility",
+                xaxis_title="Implied Volatility (%)",
+                yaxis_title="Option Value (USD)",
+            )
+        )
+        render_chart(
+            fig,
+            "Shows the vega relationship for the current contract: as implied volatility rises, option value increases because the distribution of possible terminal prices widens.",
+        )
+
+
+st.title("Quant Finance Portfolio")
+st.markdown(
+    """
+<p style="color: #334155; font-size: 1.05rem; margin-top: -10px;">
+Three applied projects across market risk, equity factor research, and derivatives pricing, assembled as a portfolio showcase with committed sample artifacts and a stateless Streamlit front end.
+</p>
+""",
+    unsafe_allow_html=True,
+)
+
+overview_tab, crypto_tab, factor_tab, options_tab = st.tabs(
+    ["Overview", "Crypto Volatility", "Factor Risk Model", "Options Pricing"]
+)
+
+with overview_tab:
+    render_overview_tab()
+
+with crypto_tab:
+    render_crypto_tab()
+
+with factor_tab:
+    render_factor_tab()
+
+with options_tab:
+    render_options_tab()

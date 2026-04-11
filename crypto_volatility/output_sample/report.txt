@@ -1,0 +1,69 @@
+============================================================
+Crypto Volatility Forecasting Report
+============================================================
+
+--- BTC-USD ---
+  Observations : 730
+  Date range   : 2024-04-09 to 2026-04-08
+  Mean return  : -0.000008
+  Ann. vol     : 47.5056%
+  VaR (95%)    : -3.8402%
+  VaR (99%)    : -6.1336%
+  GARCH AIC    : 3353.38
+  GARCH BIC    : 3367.16
+  RMSE         : 0.450878
+  Correlation  : 0.6632
+  Walk-forward backtest:
+    RMSE       : 1.863194
+    Direction  : 29.98%
+    vs Historical Vol RMSE=1.870040  DM p-value=0.9012
+    vs EWMA (lambda=0.94) RMSE=1.869133  DM p-value=0.7810
+    vs Random Walk    RMSE=2.171518  DM p-value=0.0003
+  Vol-managed overlay:
+    Sharpe     : -0.840
+    Max drawdown: -50.23%
+    Avg leverage: 0.83
+  Forecast (10d):
+    2026-04-09 : 0.023385
+    2026-04-10 : 0.023535
+    2026-04-11 : 0.023673
+    2026-04-12 : 0.023799
+    2026-04-13 : 0.023914
+    2026-04-14 : 0.024019
+    2026-04-15 : 0.024115
+    2026-04-16 : 0.024203
+    2026-04-17 : 0.024283
+    2026-04-18 : 0.024357
+
+--- ETH-USD ---
+  Observations : 730
+  Date range   : 2024-04-09 to 2026-04-08
+  Mean return  : -0.000707
+  Ann. vol     : 71.4808%
+  VaR (95%)    : -5.7750%
+  VaR (99%)    : -9.0884%
+  GARCH AIC    : 3982.28
+  GARCH BIC    : 3996.06
+  RMSE         : 0.680012
+  Correlation  : 0.3070
+  Walk-forward backtest:
+    RMSE       : 3.060073
+    Direction  : 32.08%
+    vs Historical Vol RMSE=3.022833  DM p-value=0.2863
+    vs EWMA (lambda=0.94) RMSE=3.104131  DM p-value=0.2696
+    vs Random Walk    RMSE=3.672827  DM p-value=0.0001
+  Vol-managed overlay:
+    Sharpe     : -0.728
+    Max drawdown: -41.40%
+    Avg leverage: 0.48
+  Forecast (10d):
+    2026-04-09 : 0.036577
+    2026-04-10 : 0.036847
+    2026-04-11 : 0.037016
+    2026-04-12 : 0.037122
+    2026-04-13 : 0.037189
+    2026-04-14 : 0.037230
+    2026-04-15 : 0.037257
+    2026-04-16 : 0.037273
+    2026-04-17 : 0.037284
+    2026-04-18 : 0.037290
