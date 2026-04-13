@@ -90,9 +90,8 @@ class GARCHModel:
         else:
             dir_acc = np.mean(np.sign(a.diff()) == np.sign(f.diff()))
 
-        # QLIKE loss (Patton 2011) — standard in volatility forecast evaluation.
-        # Penalises under-prediction more than over-prediction, which is appropriate
-        # for fat-tailed return distributions.
+        # QLIKE loss — better than MSE for vol forecasting because it
+        # punishes underestimating risk more than overestimating it
         f_var = f ** 2
         a_var = a ** 2
         with np.errstate(divide='ignore', invalid='ignore'):
