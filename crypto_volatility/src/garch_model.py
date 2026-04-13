@@ -90,7 +90,15 @@ class GARCHModel:
         else:
             dir_acc = np.mean(np.sign(a.diff()) == np.sign(f.diff()))
 
-        return {'mse': mse, 'mae': mae, 'rmse': rmse, 'direction_accuracy': dir_acc}
+        # QLIKE loss (Patton 2011) — standard in volatility forecast evaluation.
+        # Penalises under-prediction more than over-prediction, which is appropriate
+        # for fat-tailed return distributions.
+        f_var = f ** 2
+        a_var = a ** 2
+        with np.errstate(divide='ignore', invalid='ignore'):
+            qlike = float(np.mean(f_var / a_var - np.log(f_var / a_var) - 1.0))
+
+        return {'mse': mse, 'mae': mae, 'rmse': rmse, 'direction_accuracy': dir_acc, 'qlike': qlike}
 
 
 class RollingGARCH:
